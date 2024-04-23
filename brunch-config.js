@@ -17,7 +17,10 @@ module.exports = {
 	, plugins: {
 		babel: {
 			presets: ['@babel/preset-env', ['minify', {builtIns: false}]],
-			plugins: ["@babel/plugin-proposal-class-properties", "macros"]
+			plugins: [
+				"@babel/plugin-proposal-class-properties",
+				"macros"
+			]
 		}
 		, preval: {
 			tokens: {
