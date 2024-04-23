@@ -66,9 +66,9 @@ export class Drupal extends Task
 			}
 		});
 
-		this.php.addEventListener('output', event => {
-			console.log(event.detail);
-		});
+		// this.php.addEventListener('output', event => {
+		// 	console.log(event.detail);
+		// });
 
 		this.window.initFilesystem  = event => this.initFilesystem(event);
 

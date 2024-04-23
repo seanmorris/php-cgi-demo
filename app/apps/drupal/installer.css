@@ -83,3 +83,7 @@
 .installer .panel button.exit:after {
 	background-image: url(/w98/check-32-4bit.png);
 }
+
+.installer .panel button.open-site:after {
+	background-image: url(/w95/14-32-4bit.png);
+}

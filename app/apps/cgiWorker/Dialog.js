@@ -19,6 +19,8 @@ const Range = ace.acequire('ace/range').Range;
 
 const incomplete = new Map;
 
+const serviceTracker = {};
+
 export class Dialog extends Task
 {
 	static helpText = 'Run PHP in your browser.';
@@ -50,6 +52,30 @@ export class Dialog extends Task
 	constructor(args = [], prev = null, term = null, taskList, taskCmd = '', taskPath = [])
 	{
 		super(args, prev, term, taskList, taskCmd, taskPath);
+
+		if(taskPath && taskPath.includes('--start'))
+		{
+			this.startService();
+		}
+
+		if(taskPath && taskPath.includes('--open'))
+		{
+			window.open('/php-wasm/drupal', '_blank');
+		}
+
+		if(serviceTracker.dialog)
+		{
+			serviceTracker.dialog.window.restore();
+			serviceTracker.dialog.window.focus();
+			this.quit();
+			return;
+		}
+
+		this.window.addEventListener('closed', event => {
+			serviceTracker.dialog = null;
+		});
+
+		serviceTracker.dialog = this;
 
 		this.window.args.width  = this.window.args.minWidth  = `600px`;
 		this.window.args.height = this.window.args.minHeight = `300px`;
@@ -148,16 +174,6 @@ export class Dialog extends Task
 			serviceWorker.getRegistration(`${location.origin}/DrupalWorker.js`)
 			.then(registration => this.args.registration = registration);
 		});
-
-		if(taskPath && taskPath.includes('--start'))
-		{
-			this.startService();
-		}
-
-		if(taskPath && taskPath.includes('--open'))
-		{
-			window.open('/php-wasm/drupal', '_blank');
-		}
 	}
 
 	startService(event)
