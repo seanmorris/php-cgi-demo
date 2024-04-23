@@ -1,5 +1,4 @@
 <?php // {"autorun":true, "persist":false, "single-expression": false, "render-as": "html"}
-// ini_set('session.save_path', '/persist');
 
 $stdErr = fopen('php://stderr', 'w');
 

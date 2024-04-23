@@ -1,5 +1,4 @@
 <?php // {"autorun":true, "persist":false, "single-expression": false, "render-as": "html"}
-// ini_set('session.save_path', '/persist');
 
 $stdErr = fopen('php://stderr', 'w');
 
@@ -9,12 +8,9 @@ set_error_handler(function(...$args) use($stdErr, &$errors){
 
 $docroot = '/persist/drupal-7.95';
 
-unlink($docroot);
-
 $files = [];
 $it  = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($docroot, FilesystemIterator::SKIP_DOTS));
-$zip = new ZipArchive;
-
+$zip = new \ZipArchive;
 
 if($zip->open('/persist/backup.zip', ZipArchive::CREATE) === TRUE)
 {

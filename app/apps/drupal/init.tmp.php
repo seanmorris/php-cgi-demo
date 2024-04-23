@@ -1,5 +1,4 @@
 <?php // {"autorun":true, "persist":false, "single-expression": false, "render-as": "html"}
-ini_set('session.save_path', '/persist');
 
 $stdErr = fopen('php://stderr', 'w');
 $errors = [];
@@ -9,8 +8,6 @@ set_error_handler(function(...$args) use($stdErr, &$errors){
 });
 
 $docroot = '/persist/drupal-7.95';
-$path    = '/node';
-$script  = 'index.php';
 
 unlink($docroot);
 
@@ -35,7 +32,7 @@ print count($moves) . PHP_EOL;
 foreach($moves as $move)
 {
 	[$filename, $fromDir, $toDir] = $move;
-	print($toDir  . '/' . $filename . PHP_EOL);
+	print($fromDir . '/' . $filename . ' => ' . $toDir  . '/' . $filename . PHP_EOL);
 	file_put_contents($toDir  . '/' . $filename, file_get_contents($fromDir . '/' . $filename));
 }
 

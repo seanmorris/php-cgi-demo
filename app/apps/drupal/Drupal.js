@@ -67,7 +67,7 @@ export class Drupal extends Task
 		});
 
 		this.php.addEventListener('output', event => {
-			// console.log(event.detail);
+			console.log(event.detail);
 		});
 
 		this.window.initFilesystem  = event => this.initFilesystem(event);
@@ -102,16 +102,12 @@ export class Drupal extends Task
 			}
 		});
 
-		const msgBus = new Proxy(Object.create(null), {
-			get: (target, action, receiver) => {
-				console.log({target, action, receiver});
-				return (...params)  => this.sendMessage(action, params);
-			}
-		});
-
-		this.msgBus = msgBus;
-
-		console.log(msgBus, this.msgBus);
+		// const msgBus = new Proxy(Object.create(null), {
+		// 	get: (target, action, receiver) => {
+		// 		console.log({target, action, receiver});
+		// 		return (...params)  => this.sendMessage(action, params);
+		// 	}
+		// });
 
 		return Bindable.make(this);
 	}
@@ -213,7 +209,7 @@ export class Drupal extends Task
 	openSite()
 	{
 		Home.instance().run('cgi-worker', ['--start'])
-		window.open('/php-wasm/drupal/');
+		setTimeout(() => window.open('/php-wasm/drupal/'), 200);
 	}
 
 	async backupSite()
@@ -242,14 +238,14 @@ export class Drupal extends Task
 			this.php.addEventListener('output', trackProgress);
 			this.php.run(require('./backup.tmp.php'))
 			.then(() => this.sendMessage('refresh', []))
-			.then(() => this.msgBus.readFile('/persist/backup.zip'))
+			.then(() => this.sendMessage('readFile', ['/persist/backup.zip']))
 			.then(result => {
 				this.php.removeEventListener('output', trackProgress);
 				const blob = new Blob([result], {type:'application/zip'})
 				const link = document.createElement('a');
 				link.href = URL.createObjectURL(blob);
 				link.click();
-				this.window.args.step = 'step-3';
+				this.window.args.step = 'step-1';
 			}).catch(error => {
 				console.log("ERR!");
 				console.error(error);
@@ -272,7 +268,6 @@ export class Drupal extends Task
 
 		input.addEventListener('change', () => {
 			input.files[0].arrayBuffer().then(zipContents => {
-				this.php.addEventListener('output', installTracker);
 				navigator.locks.request("php-persist", async (lock) => {
 					this.window.args.step = 'step-3-running';
 					this.sendMessage('writeFile', ['/persist/restore.zip', new Uint8Array(zipContents)])
