@@ -13,6 +13,10 @@
 	align-items: center;
 	padding: 0px;
 }
+.task-bar .button.flashing,
+.task-bar button.flashing {
+	animation: taskbutton-flash 0.4s steps(1) infinite;background-color: #000082;
+}
 
 .task-bar button {
 	padding: 2px;
@@ -161,4 +165,16 @@
 
 .tray [data-role=icon-list] div:focus img {
 	filter: brightness(110%);
+}
+
+@keyframes taskbutton-flash {
+	0% {
+		filter: invert(0);
+	}
+	50% {
+		filter: invert(1);
+	}
+	100% {
+		filter: invert(0);
+	}
 }

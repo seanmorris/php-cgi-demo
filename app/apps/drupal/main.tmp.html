@@ -1,31 +1,14 @@
-<div class = "liquid rows">
-	<div class = "padded">
-
-		<div class = "row padded spread" style="max-width: 275px;">
-			<img src = "/apps/drupal-32-24bit.png" />
-			<h1>Drupal 7 Setup</h1>
+<div class = "liquid rows installer">
+	<h1>Drupal 7 Setup</h1>
+	<div class = "panel">
+		<div class = "padded">
+			<div class = "banner inset"></div>
 		</div>
-
-		<div class = "rows padded">
-			<button class = "padded" cv-on = "click:initFilesystem">Initialize Filesystem</button>
-			<small>Clear the filesystem and restore it to the inital state.</small>
+		<div class = "liquid padded main">
+			<div cv-slot = "step-1"></div>
+			<div cv-slot = "step-2"></div>
+			<div cv-slot = "step-3"></div>
 		</div>
-
-		<div class = "rows padded">
-			<button class = "padded" cv-on = "click:clearFilesystem">Clear Filesystem</button>
-			<small>Clear the filesystem.</small>
-		</div>
-
-		<div class = "rows padded">
-			<button class = "padded" cv-on = "click:startServer">Start the Server</button>
-			<small>Spin up the CGI Service Worker.</small>
-		</div>
-
-		<div class = "rows padded">
-			<button class = "padded" cv-on = "click:openSite">Open Site</button>
-			<small>Open Drupal in a new tab.</small>
-		</div>
-
 	</div>
 </div>
 

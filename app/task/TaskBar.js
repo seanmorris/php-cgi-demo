@@ -94,5 +94,9 @@ export class TaskBar extends View
 	attachTask(event, task)
 	{
 		task.taskButton = event.target;
+
+		event.target.classList.add('flashing');
+
+		this.onTimeout(800, () => event.target.classList.remove('flashing'));
 	}
 }

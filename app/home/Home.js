@@ -34,6 +34,8 @@ export class Home extends View
 
 		this.args.desktop = new Desktop({}, this);
 
+		this.args.isMobile = !!String(navigator.userAgent).match(/(android|iphone)/i);
+
 		this.tasks   = new Bag();
 		this.tray    = new Bag();
 		this.windows = new Bag((i,s,a) => {
@@ -80,7 +82,7 @@ export class Home extends View
 		this.routes = {
 
 			// '': () => {}
-			'': () => Router.go('/repo-browser/seanmorris/nynex95/package.json')
+			'': () => Router.go('/drupal')
 
 			, '*': (args) => {
 

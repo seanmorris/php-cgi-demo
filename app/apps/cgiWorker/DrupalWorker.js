@@ -1,7 +1,6 @@
 import { PhpCgi } from "./PhpCgi";
 
 const cookies = new Map;
-
 const php = new PhpCgi({ cookies, docroot: '/persist/drupal-7.95', rewrite: path => {
 	const _path = path.split('/');
 
@@ -10,25 +9,15 @@ const php = new PhpCgi({ cookies, docroot: '/persist/drupal-7.95', rewrite: path
 		_path.shift();
 	}
 
-	if(_path[0] === 'php-wasm')
+	if(_path[0] === 'php-wasm' && _path[1] === 'drupal')
 	{
 		_path.shift();
-		if(_path[0] === 'drupal')
-		{
-			_path.shift();
-		}
-	}
-
-	if(_path[0] === 'persist')
-	{
 		_path.shift();
-		if(_path[0] === 'drupal-7.95')
-		{
-			_path.shift();
-		}
+
+		return {path: '/' + _path.join('/'), scriptName: '/php-wasm/drupal/index.php'};
 	}
 
-	return _path.join('/');
+	return '/' + _path.join('/');
 } });
 
 self.addEventListener('install', event => {
@@ -42,70 +31,25 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => event.respondWith(new Promise(accept => {
-	const request  = event.request;
-	const url      = new URL(request.url);
-	const pathname = url.pathname.replace(/^\//, '');
-	const path     = pathname.split('/');
-	const _path    = path.slice(0);
+	const url     = new URL(event.request.url);
+	const prefix  = '/php-wasm/drupal';
+	const request = event.request;
 
-	if(self.location.hostname === url.hostname && (
-		((_path[0] === 'php-wasm' && _path[1] === 'drupal'))
-		|| ((_path[0] === 'persist' && _path[1] === 'drupal-7.95'))
-	)){
-		let getPost = Promise.resolve();
-
-		if(request.body)
-		{
-			getPost = new Promise(accept => {
-				const reader = request.body.getReader();
-				const postBody = [];
-
-				const processBody = ({done, value}) => {
-
-					if(value)
-					{
-						postBody.push([...value].map(x => String.fromCharCode(x)).join(''));
-					}
-
-					if(!done)
-					{
-						return reader.read().then(processBody);
-					}
-
-					accept(postBody.join(''));
-				};
-
-				return reader.read().then(processBody);
-			});
-		}
-
-		return getPost.then(post => {
-			return php.request({
-				event
-				, url
-				, method: request.method
-				, path: _path.join('/')
-				, get: url.search ? url.search.substr(1) : ''
-				, post: request.method === 'POST' ? post : null
-				, contentType: request.method === 'POST'
-					? (request.headers.get('Content-Type') ?? 'application/x-www-form-urlencoded')
-					: null
-			});
-		})
-		.then(response => {
+	if(url.pathname.substr(0, prefix.length) === prefix && url.hostname === self.location.hostname)
+	{
+		return php.request(request).then(response => {
 			const logLine = `[${(new Date).toISOString()}] #${php.count} 127.0.0.1 - "${request.method} ${url.pathname}" - HTTP/1.1 ${response.status}`;
-
 			clients.matchAll({includeUncontrolled: true}).then(clients => {
 				clients.forEach(client => client.postMessage({
 					action: 'logRequest',
 					params: [logLine, {status: response.status}],
 				}))
 			});
-
 			accept(response);
-
 		});
 	}
+
+	const _path = url.pathname.split('/').slice(1);
 
 	if(_path[0] === 'php-wasm')
 	{
@@ -115,7 +59,6 @@ self.addEventListener('fetch', event => event.respondWith(new Promise(accept => 
 	if(_path.length && !_path[ _path.length-1 ].match(/\.\w+$/) && _path[1] === 'drupal-7.95')
 	{
 		const getPost = request.method !== 'POST' ? Promise.resolve() : request.formData();
-
 		return getPost.then(post => {
 			accept(new Response(`<script>window.parent.postMessage({
 				action: 'respond'
@@ -131,10 +74,8 @@ self.addEventListener('fetch', event => event.respondWith(new Promise(accept => 
 			}));
 		});
 	}
-	else
-	{
-		accept(fetch(request));
-	}
+
+	accept(fetch(request));
 })));
 
 self.addEventListener('message', async event => {
@@ -156,7 +97,22 @@ self.addEventListener('message', async event => {
 		case 'setSettings':
 		case 'getEnvs':
 		case 'setEnvs':
-			source.postMessage({re: token, result: await php[action](...params)});
+		case 'storeInit':
+			let result, error;
+			try
+			{
+				result = await php[action](...params);
+			}
+			catch(_error)
+			{
+				error = JSON.parse(JSON.stringify(_error));
+				console.warn(_error);
+			}
+			finally
+			{
+				source.postMessage({re: token, result, error});
+			}
+
 		break;
 	}
 });

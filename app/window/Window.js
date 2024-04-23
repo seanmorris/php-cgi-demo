@@ -62,9 +62,16 @@ export class Window extends Mixin.from(View, ViewProcessor, CssSwitch)
 			}
 		});
 
+		this.titleBarTapTime = 0;
+
 		this.classes.resizing = false;
 		this.classes.resize = true;
 		this.classes.pane   = true;
+
+		if(Home.instance().args.isMobile)
+		{
+			this.classes.maximized = true;
+		}
 	}
 
 	onRendered(event)
@@ -600,13 +607,26 @@ export class Window extends Mixin.from(View, ViewProcessor, CssSwitch)
 
 	grabTitleBar(event)
 	{
-		if(!(event.buttons & 0x1))
+		if(!(event.buttons & 0x1) && !event.touches)
 		{
 			return;
 		}
 
+		if(event.touches)
+		{
+			if(Date.now() - this.titleBarTapTime < 300)
+			{
+				this.maximize();
+				return;
+			}
+
+			this.titleBarTapTime = Date.now();
+		}
+
+		const pos = event.touches ? event.touches[0] : event;
+
 		const start = { x: this.pos.x, y: this.pos.y};
-		const click = { x: event.clientX, y: event.clientY };
+		const click = { x: pos.clientX, y: pos.clientY };
 
 		this.classes.moving = true;
 
@@ -619,7 +639,9 @@ export class Window extends Mixin.from(View, ViewProcessor, CssSwitch)
 				start.y = 0;
 			}
 
-			const mouse = { x: event.clientX, y: event.clientY };
+			const pos = event.touches ? event.touches[0] : event;
+
+			const mouse = { x: pos.clientX, y: pos.clientY };
 			const moved = { x: mouse.x - click.x, y: mouse.y - click.y };
 
 			this.pos.x = start.x + moved.x;
@@ -754,14 +776,13 @@ export class Window extends Mixin.from(View, ViewProcessor, CssSwitch)
 
 		const maxWidth = parent.getBoundingClientRect().width;
 
-		[...parent.childNodes].map(child => {
+		const children = [...parent.children];
+
+		const widths = new Map;
+
+		children.forEach(child => {
 
 			if(child.nodeType !== Node.ELEMENT_NODE)
-			{
-				return;
-			}
-
-			if(child.matches('[data-horizontal-resize],[data-vertical-resize]'))
 			{
 				return;
 			}
@@ -772,7 +793,17 @@ export class Window extends Mixin.from(View, ViewProcessor, CssSwitch)
 			}
 
 			const width = child.getBoundingClientRect().width;
-			child.style.maxWidth = `${width / maxWidth * 100 }%`;
+
+			if(child.matches('[data-horizontal-resize],[data-vertical-resize]'))
+			{
+				return;
+			}
+
+			widths.set(child, `${width / maxWidth * 100 }%`)
+		});
+
+		[...widths.entries()].forEach(([child, width]) => {
+			child.style.flexBasis = width;
 		});
 
 		while((before.nodeType !== Node.ELEMENT_NODE || !before.offsetParent) && before.previousSibling)
@@ -791,31 +822,31 @@ export class Window extends Mixin.from(View, ViewProcessor, CssSwitch)
 		const beforeBorder = Math.ceil(before.getBoundingClientRect().width - before.clientWidth);
 		const afterBorder  = Math.ceil(after.getBoundingClientRect().width - after.clientWidth);
 
-		before.style.maxWidth = `${beforeWidth}%`;
-		after.style.maxWidth  = `${afterWidth}%`;
+		// before.style.flexBasis = `${beforeWidth}%`;
+		// after.style.flexBasis  = `${afterWidth}%`;
 
 		const onMove = (event) => {
 			const delta = (start - event.clientX) / maxWidth * 100;
 
 			if(beforeWidth - delta < 1)
 			{
-				before.style.maxWidth = 0;
-				after.style.maxWidth = `calc(${beforeWidth + afterWidth}% - ${beforeBorder}px)`;
+				before.style.flexBasis = 0;
+				after.style.flexBasis = `calc(${beforeWidth + afterWidth}% - ${beforeBorder}px)`;
 				return;
 			}
 
 			if(afterWidth + delta < 1)
 			{
-				after.style.maxWidth = 0;
-				before.style.maxWidth = `calc(${beforeWidth + afterWidth}% - ${afterBorder}px)`;
+				after.style.flexBasis = 0;
+				before.style.flexBasis = `calc(${beforeWidth + afterWidth}% - ${afterBorder}px)`;
 				return;
 			}
 
-			before.style.maxWidth = `${beforeWidth - delta}%`;
-			after.style.maxWidth  = `${afterWidth  + delta}%`;
+			before.style.flexBasis = `${beforeWidth - delta}%`;
+			after.style.flexBasis  = `${afterWidth  + delta}%`;
 
-			before.style.flex = 1;
-			after.style.flex = 1;
+			// before.style.flex = 1;
+			// after.style.flex = 1;
 		};
 
 		const localDoc = event.target.getRootNode();

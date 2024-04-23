@@ -31,5 +31,6 @@ export class WidgetViewer extends Task
 
 		this.window.classes.transparent = true;
 		this.window.classes.pane        = false;
+		this.window.classes.maximized   = false;
 	}
 }

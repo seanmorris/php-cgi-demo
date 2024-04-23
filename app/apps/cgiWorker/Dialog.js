@@ -28,20 +28,20 @@ export class Dialog extends Task
 	template = require('./dialog.tmp');
 
 	menus = {
-		File: {
-			'Explore': { callback: () => {} }
-			, 'Open IDE': { callback: () => {} }
-			, 'Install Package': { callback: () => {} }
-			, Quit: { callback: () => {} }
-		}
-		, Setup: {
+		// File: {
+		// 	'Explore': { callback: () => {} }
+		// 	, 'Open IDE': { callback: () => {} }
+		// 	, 'Install Package': { callback: () => {} }
+		// 	, Quit: { callback: () => {} }
+		// }
+		Setup: {
 			'CGI Settings': { callback: () => this.cgiSettings() }
 			, 'Env vars': { callback: () => this.envEditor() }
 			, 'php.ini': { callback: () => this.iniEditor() }
 			, 'Restart PHP': { callback: () => this.refresh() }
 		}
 		, Help: {
-			About: { callback: () => {} }
+			About: { callback: () => this.about() }
 		}
 	};
 
@@ -93,9 +93,9 @@ export class Dialog extends Task
 
 		this.window.args.log = [];
 
-		serviceWorker.addEventListener('message', event => {
+		this.window.listen(serviceWorker, 'message', event => {
 
-			if(event.data.re)
+			if(event.data.re && incomplete.has(event.data.re))
 			{
 				const callback = incomplete.get(event.data.re);
 
@@ -117,8 +117,6 @@ export class Dialog extends Task
 			{
 				case 'logRequest':
 				{
-					console.log(detail.text);
-
 					this.window.args.log.push(Bindable.make(detail));
 
 					while(this.window.args.log.length > 100)
@@ -150,6 +148,16 @@ export class Dialog extends Task
 			serviceWorker.getRegistration(`${location.origin}/DrupalWorker.js`)
 			.then(registration => this.args.registration = registration);
 		});
+
+		if(taskPath && taskPath.includes('--start'))
+		{
+			this.startService();
+		}
+
+		if(taskPath && taskPath.includes('--open'))
+		{
+			window.open('/php-wasm/drupal', '_blank');
+		}
 	}
 
 	startService(event)
@@ -265,7 +273,10 @@ export class Dialog extends Task
 		subWindow.save = () => {
 			this.sendMessage('setEnvs', [{...subWindow.args.kv.args.props}], result => {
 				console.log(result);
-				subWindow.close()
+				this.sendMessage('storeInit', [], result => {
+					console.log(result);
+					subWindow.close()
+				});
 			});
 		};
 
@@ -303,7 +314,6 @@ export class Dialog extends Task
 		const subWindow = this.openSubWindow(subArgs);
 
 		subWindow.save = () => {
-
 			const settings = {
 				docroot: subArgs.docroot ?? this.docroot
 				, maxRequestAge: subArgs.maxRequestAge ?? this.maxRequestAge
@@ -313,7 +323,10 @@ export class Dialog extends Task
 
 			this.sendMessage('setSettings', [settings], result => {
 				console.log(result);
-				subWindow.close()
+				this.sendMessage('storeInit', [], result => {
+					console.log(result);
+					subWindow.close();
+				});
 			});
 
 		};

@@ -18,6 +18,10 @@ html, body {
 	user-select: none;
 }
 
+body > section {
+	display: contents;
+}
+
 textarea, input, [contenteditable] {
 	user-select: initial;
 }
@@ -66,10 +70,6 @@ p, h1 {
 
 .stretch {
 	align-self: stretch;
-}
-
-.stretch-children {
-	flex-basis: 100%;
 }
 
 .frame .frame {
@@ -294,6 +294,10 @@ button.tight {
 
 .spread {
 	justify-content: space-between;
+}
+
+.spread-around {
+	justify-content: space-around;
 }
 
 .tight > button.square {
@@ -897,4 +901,8 @@ button input[type=checkbox] {
 
 .nowrap {
 	white-space: nowrap;
+}
+
+.resize-container {
+
 }

@@ -8,20 +8,59 @@ const putEnv = (php, key, value) => php.ccall(
 	, [key, value]
 );
 
+const breakoutRequest = request => {
+	let getPost = Promise.resolve();
+
+	if(request.body)
+	{
+		getPost = new Promise(accept => {
+			const reader   = request.body.getReader();
+			const postBody = [];
+
+			const processBody = ({done, value}) => {
+				if(value)
+				{
+					postBody.push([...value].map(x => String.fromCharCode(x)).join(''));
+				}
+
+				if(!done)
+				{
+					return reader.read().then(processBody);
+				}
+
+				accept(postBody.join(''));
+			};
+
+			return reader.read().then(processBody);
+		});
+	}
+
+	const url = new URL(request.url);
+
+	return getPost.then(post => ({
+		url
+		, method: request.method
+		, get: url.search ? url.search.substr(1) : ''
+		, post: request.method === 'POST' ? post : null
+		, contentType: request.method === 'POST'
+			? (request.headers.get('Content-Type') ?? 'application/x-www-form-urlencoded')
+			: null
+	}));
+};
+
+const requestTimes = new WeakMap;
+
 export class PhpCgi
 {
 	rewrite    = path => path;
 	processing = null
 	docroot    = null;
 	php        = null;
-
-	input  = [];
-	output = [];
-	error  = [];
-
-	cookies = new Map;
-
-	count = 0;
+	input      = [];
+	output     = [];
+	error      = [];
+	cookies    = new Map;
+	count      = 0;
 
 	constructor({docroot, rewrite, cookies, ...args} = {})
 	{
@@ -30,105 +69,112 @@ export class PhpCgi
 		this.rewrite = rewrite || this.rewrite;
 		this.phpArgs = args;
 
-		this.maxRequestAge = args.maxRequestAge || 0;
-		this.staticCacheTime = args.staticCacheTime || 0;
+		this.maxRequestAge    = args.maxRequestAge || 0;
+		this.staticCacheTime  = args.staticCacheTime || 0;
 		this.dynamicCacheTime = args.dynamicCacheTime || 0;
 
 		this.env = {};
 
 		Object.assign(this.env, args.env || {});
 
-		this.loadPhp();
+		this.refresh();
 	}
 
-	async loadPhp()
+	async refresh()
 	{
-		const mountPath = '/persist';
-
 		this.php = new PHP({
-			stdin:   () => {
-				return this.input
+			stdin: () =>  this.input
 				? String(this.input.shift()).charCodeAt(0)
 				: null
-			}
 			, stdout: x => this.output.push(String.fromCharCode(x))
-			, stderr: x => console.warn(String.fromCharCode(x))
-			, persist: {mountPath}
-			,...this.phpArgs
-		})
+			, persist: [{mountPath:'/persist'}, {mountPath:'/config'}]
+			, ...this.phpArgs
+		});
 
-		const php = await this.php;
-
-		return new Promise((accept,reject) => navigator.locks.request('php-persist', () => {
-			php.ccall('pib_storage_init' , 'number' , [] , [] );
-			php.ccall('wasm_sapi_cgi_init' , 'number' , [] , [] );
-			php.FS.mkdir('/config');
-			php.FS.syncfs(true, err => {
+		await navigator.locks.request('php-storage', async () => {
+			const php = await this.php;
+			php.ccall('pib_storage_init',   'number' , [] , []);
+			php.ccall('wasm_sapi_cgi_init', 'number' , [] , []);
+			await new Promise((accept,reject) => php.FS.syncfs(true, err => {
 				if(err) reject(err);
-				else accept(php);
-			});
-		}));
+				else    accept();
+			}));
+		});
+
+		await this.loadInit();
 	}
 
-	async request({event, url, filename, method = 'GET', path = '', get, post, contentType = '', signal = null})
+	async request(request)
 	{
-		path = this.rewrite(path);
+		requestTimes.set(request, Date.now());
 
-		if(!path && !filename)
+		const {
+			url
+			, method = 'GET'
+			, get
+			, post
+			, contentType
+		} = await breakoutRequest(request);
+
+		const originalPath = url.pathname;
+
+		const rewrite = this.rewrite(url.pathname);
+
+		let scriptName, path;
+
+		if(typeof rewrite === 'object')
 		{
-			path = '/index.php';
+			scriptName = rewrite.scriptName;
+			path = this.docroot + rewrite.path;
 		}
-
-		if(path[0] !== '/')
+		else
 		{
-			path = '/' + path;
-		}
-
-		if(!filename)
-		{
-			filename = this.docroot + path;
+			scriptName = path = this.docroot + path;
 		}
 
 		const cache  = await caches.open('static-v1');
 		const cached = await cache.match(url);
 
+		// this.maxRequestAge
+
 		if(cached)
 		{
 			const cacheTime = Number(cached.headers.get('x-php-wasm-cache-time'));
 
-			if(120_000 < Date.now() - cacheTime)
+			if(this.staticCacheTime > 0 && this.staticCacheTime < Date.now() - cacheTime)
 			{
 				return cached;
 			}
 		}
 
 		const php = await this.php;
-		const originalFilename = filename;
 
 		return new Promise(async accept => {
 
-			if(originalFilename.substr(-4) !== '.php')
+			if(path.substr(-4) !== '.php')
 			{
-				const aboutPath = php.FS.analyzePath(originalFilename);
+				const aboutPath = php.FS.analyzePath(path);
 
 				// Return static file
-				if(aboutPath.exists)
+				if(aboutPath.exists && php.FS.isFile(aboutPath.object.mode))
 				{
-					const response = new Response(php.FS.readFile(originalFilename, { encoding: 'binary', url }), {});
-
+					const response = new Response(php.FS.readFile(path, { encoding: 'binary', url }), {});
 					response.headers.append('x-php-wasm-cache-time', new Date().getTime());
-
 					cache.put(url, response.clone());
-
 					accept(response);
 					return;
 				}
 
 				// Rewrite to index
-				filename = this.docroot + '/index.php';
+				path = this.docroot + '/index.php';
 			}
 
-			await navigator.locks.request('php-persist', async () => {
+			await navigator.locks.request('php-storage', async () => {
+
+				if(this.maxRequestAge > 0 && Date.now() - requestTimes.get(request) > this.maxRequestAge)
+				{
+					return accept(new Response('408: Request Timed Out.', { status: 408 }));
+				}
 
 				const docroot = this.docroot;
 
@@ -136,15 +182,21 @@ export class PhpCgi
 				this.output = [];
 				this.error  = [];
 
+				const selfUrl = new URL(globalThis.location);
+
 				// putEnv(php, 'PHP_INI_SCAN_DIR', '/conf');
-				putEnv(php, 'DOCROOT', docroot);
 				putEnv(php, 'SERVER_SOFTWARE', navigator.userAgent);
 				putEnv(php, 'REQUEST_METHOD', method);
-				putEnv(php, 'REQUEST_URI', originalFilename);
 				putEnv(php, 'REMOTE_ADDR', '127.0.0.1');
-				putEnv(php, 'SCRIPT_NAME', filename);
-				putEnv(php, 'SCRIPT_FILENAME', filename);
-				putEnv(php, 'PATH_TRANSLATED', originalFilename);
+				putEnv(php, 'HTTP_HOST', selfUrl.host);
+				putEnv(php, 'REQUEST_SCHEME', selfUrl.protocol.substr(0, selfUrl.protocol.length - 0));
+
+				putEnv(php, 'DOCUMENT_ROOT', docroot);
+				putEnv(php, 'REQUEST_URI', originalPath);
+				putEnv(php, 'SCRIPT_NAME', scriptName);
+				putEnv(php, 'SCRIPT_FILENAME', path);
+				putEnv(php, 'PATH_TRANSLATED', path);
+
 				putEnv(php, 'QUERY_STRING', get);
 				putEnv(php, 'HTTP_COOKIE', [...this.cookies.entries()].map(e => `${e[0]}=${e[1]}`).join(';') );
 				putEnv(php, 'REDIRECT_STATUS', '200');
@@ -153,21 +205,19 @@ export class PhpCgi
 
 				try
 				{
-					const exitCode = php._main();
-
-					if(exitCode === 0)
+					if(php._main() === 0) // PHP exited with code 0
 					{
 						await new Promise((accept,reject) => php.FS.syncfs(false, err => {
 							if(err) reject(err);
-							else accept();
+							else    accept();
 						}));
 					}
 				}
 				catch (error)
 				{
 					console.warn(error);
-					this.loadPhp();
-					accept(new Response('ERR', { status: 500 }));
+					this.refresh();
+					accept(new Response('500: Internal Server Error.', { status: 500 }));
 					return;
 				}
 
@@ -206,15 +256,11 @@ export class PhpCgi
 				accept(new Response(parsedResponse.body, { headers, status, url }));
 	 		})
 		});
-
 	}
 
 	async analyzePath(path)
 	{
 		const result = (await this.php).FS.analyzePath(path);
-
-		console.log(result);
-
 		return {...result, object: undefined, parentObject: undefined};
 	}
 
@@ -231,10 +277,8 @@ export class PhpCgi
 	async mkdir(path)
 	{
 		const php = (await this.php);
-
 		const result = php.FS.mkdir(path);
-
-		return new Promise(accept => navigator.locks.request('php-persist', () => {
+		return new Promise(accept => navigator.locks.request('php-storage', () => {
 			php.FS.syncfs(false, err => {
 				if(err) throw err;
 				accept(result);
@@ -245,10 +289,8 @@ export class PhpCgi
 	async rmdir(path)
 	{
 		const php = (await this.php);
-
 		const result = php.FS.rmdir(path);
-
-		return new Promise(accept => navigator.locks.request('php-persist', () => {
+		return new Promise(accept => navigator.locks.request('php-storage', () => {
 			php.FS.syncfs(false, err => {
 				if(err) throw err;
 				accept(result);
@@ -259,10 +301,8 @@ export class PhpCgi
 	async writeFile(path, data, options)
 	{
 		const php = (await this.php);
-
 		const result = php.FS.writeFile(path, data, options);
-
-		return new Promise(accept => navigator.locks.request('php-persist', () => {
+		return new Promise(accept => navigator.locks.request('php-storage', () => {
 			php.FS.syncfs(false, err => {
 				if(err) throw err;
 				accept(result);
@@ -273,10 +313,8 @@ export class PhpCgi
 	async unlink(path)
 	{
 		const php = (await this.php);
-
 		const result = php.FS.unlink(path);
-
-		return new Promise(accept => navigator.locks.request('php-persist', () => {
+		return new Promise(accept => navigator.locks.request('php-storage', () => {
 			php.FS.syncfs(false, err => {
 				if(err) throw err;
 				accept(result);
@@ -286,9 +324,7 @@ export class PhpCgi
 
 	async putEnv(name, value)
 	{
-		const php = (await this.php);
-
-		return php.ccall('wasm_sapi_cgi_putenv', 'number', ['string', 'string'], [name, value]);
+		return (await this.php).ccall('wasm_sapi_cgi_putenv', 'number', ['string', 'string'], [name, value]);
 	}
 
 	async getSettings()
@@ -299,7 +335,6 @@ export class PhpCgi
 			, staticCacheTime: this.staticCacheTime
 			, dynamicCacheTime: this.dynamicCacheTime
 		};
-
 	}
 
 	async setSettings({docroot, maxRequestAge, staticCacheTime, dynamicCacheTime})
@@ -312,7 +347,6 @@ export class PhpCgi
 
 	async getEnvs()
 	{
-		console.log({...this.env});
 		return {...this.env};
 	}
 
@@ -326,31 +360,31 @@ export class PhpCgi
 		Object.assign(this.env, env);
 	}
 
-	async refresh()
-	{
-		this.loadPhp();
-	}
-
 	async storeInit()
 	{
 		const settings = await this.getSettings();
 		const env = await this.getEnvs();
-		const ini = await this.readFile('/config/php.ini', {encoding: 'utf8'});
-
-		this.writeFile('/config/init.json', JSON.stringify({settings, env, ini}), {encoding: 'utf8'});
+		this.writeFile('/config/init.json', JSON.stringify({settings, env}), {encoding: 'utf8'});
 	}
 
 	async loadInit()
 	{
+		const initPath = '/config/init.json';
+		const php = (await this.php);
+		const check = php.FS.analyzePath(initPath);
 
+		if(!check.exists)
+		{
+			return;
+		}
+
+		const initJson = php.FS.readFile(initPath, {encoding: 'utf8'});
+		const init = JSON.parse(initJson || {});
+		const {settings, env} = init;
+
+		console.log(init);
+
+		this.setSettings(settings);
+		this.setEnvs(env);
 	}
 }
-
-/*
-export const PHP_INI_STAGE_STARTUP = (1<<0);
-export const PHP_INI_STAGE_SHUTDOWN = (1<<1);
-export const PHP_INI_STAGE_ACTIVATE = (1<<2);
-export const PHP_INI_STAGE_DEACTIVATE = (1<<3);
-export const PHP_INI_STAGE_RUNTIME = (1<<4);
-export const PHP_INI_STAGE_HTACCESS = (1<<5);
-*/

@@ -40,24 +40,24 @@ export class Desktop extends View
 		]}, this);
 
 		this.args.icons = [
-			new Icon({
-				action: 'icon-explorer'
-				, name: 'Icon Explorer'
-				, icon: 'shell_window4'
-				, path: 'w98'
-				, bits: 8
-			})
-			, new Icon({
-				action: 'repo-browser'
-				, name: 'Repo Browser'
-				, icon: 73
-				// , path: 'w98'
-			})
-			, new Icon({
-				action: 'nynepad'
-				, name: 'Nynepad'
-				, icon: 60
-			})
+			// new Icon({
+			// 	action: 'icon-explorer'
+			// 	, name: 'Icon Explorer'
+			// 	, icon: 'shell_window4'
+			// 	, path: 'w98'
+			// 	, bits: 8
+			// })
+			// , new Icon({
+			// 	action: 'repo-browser'
+			// 	, name: 'Repo Browser'
+			// 	, icon: 73
+			// 	// , path: 'w98'
+			// })
+			// , new Icon({
+			// 	action: 'nynepad'
+			// 	, name: 'Nynepad'
+			// 	, icon: 60
+			// })
 			// , new Icon({
 			// 	action: 'nynemark'
 			// 	, name: 'Nynemark'
@@ -69,12 +69,12 @@ export class Desktop extends View
 			// 	, name: 'Application Window'
 			// 	, icon: 3
 			// })
-			, new Icon({
-				action: 'task-manager'
-				, name: 'Task Manager'
-				, icon: 'computer_taskmgr'
-				, path: 'w98'
-			})
+			// , new Icon({
+			// 	action: 'task-manager'
+			// 	, name: 'Task Manager'
+			// 	, icon: 'computer_taskmgr'
+			// 	, path: 'w98'
+			// })
 			// , new Icon({
 			// 	action: 'navigator'
 			// 	, path: 'apps'
@@ -82,13 +82,13 @@ export class Desktop extends View
 			// 	, icon: 'navigator'
 			// 	, bits: 4
 			// })
-			, new Icon({
-				action: 'console'
-				, path: 'apps'
-				, name: 'Terminal'
-				, icon: 'console'
-				, bits: 24
-			})
+			// , new Icon({
+			// 	action: 'console'
+			// 	, path: 'apps'
+			// 	, name: 'Terminal'
+			// 	, icon: 'console'
+			// 	, bits: 24
+			// })
 			// , new Icon({
 			// 	action: 'console'
 			// 	, path: 'apps'
@@ -103,56 +103,23 @@ export class Desktop extends View
 			// 	, icon: 'curvature'
 			// 	, bits: 8
 			// })
-			, new Icon({
-				action: 'widgets'
-				, name: 'Widget Viewer'
-				, icon: 61
-			})
-			, new Icon({
-				action: 'file-browser'
-				, name: 'File Browser'
-				, icon: 5
-			})
-			, new Icon({
-				action: 'cubes'
-				, name: 'Cubes 3d'
-				, icon: 'cube'
-				, path: 'apps'
-				, bits: 1
-			})
-		];
-
-		this.args.endIcons = [
-			// new Icon({
-			// 	action: 'nynex-help'
-			// 	, name: 'What\'s Nynex?'
-			// 	, icon: 'help_book_big'
-			// 	, path: 'w98'
-			// 	, bits: 4
-			// 	, size: 32
+			// , new Icon({
+			// 	action: 'widgets'
+			// 	, name: 'Widget Viewer'
+			// 	, icon: 61
 			// })
 			// , new Icon({
-			// 	action: 'unpkgr'
-			// 	, name: 'unpkgr'
-			// 	, icon: 'npm'
-			// 	, path: 'apps'
-			// 	, bits: 24
+			// 	action: 'file-browser'
+			// 	, name: 'File Browser'
+			// 	, icon: 5
 			// })
-			, new Icon({
-				action: 'github'
-				, name: 'GitHub Login'
-				, icon: 'github'
-				, path: 'apps'
-				, bits: 2
-				// , size: 48
-			})
-			, new Icon({
-				action: 'clippy'
-				, name: 'Summon the Devil'
-				, icon: 'doom-eye'
-				, path: 'apps'
-				, bits: 24
-			})
+			// , new Icon({
+			// 	action: 'cubes'
+			// 	, name: 'Cubes 3d'
+			// 	, icon: 'cube'
+			// 	, path: 'apps'
+			// 	, bits: 1
+			// })
 			, new Icon({
 				action: 'php'
 				, name: 'Run PHP'
@@ -174,6 +141,40 @@ export class Desktop extends View
 				, path: 'apps'
 				, bits: 24
 			})
+		];
+
+		this.args.endIcons = [
+			// new Icon({
+			// 	action: 'nynex-help'
+			// 	, name: 'What\'s Nynex?'
+			// 	, icon: 'help_book_big'
+			// 	, path: 'w98'
+			// 	, bits: 4
+			// 	, size: 32
+			// })
+			// , new Icon({
+			// 	action: 'unpkgr'
+			// 	, name: 'unpkgr'
+			// 	, icon: 'npm'
+			// 	, path: 'apps'
+			// 	, bits: 24
+			// })
+			// , new Icon({
+			// 	action: 'github'
+			// 	, name: 'GitHub Login'
+			// 	, icon: 'github'
+			// 	, path: 'apps'
+			// 	, bits: 2
+			// 	// , size: 48
+			// })
+			// , new Icon({
+			// 	action: 'clippy'
+			// 	, name: 'Summon the Devil'
+			// 	, icon: 'doom-eye'
+			// 	, path: 'apps'
+			// 	, bits: 24
+			// })
+
 			// , new Icon({
 			// 	action: 'dos'
 			// 	, name: 'Doom'
@@ -181,27 +182,27 @@ export class Desktop extends View
 			// 	, path: 'apps'
 			// 	, bits: 16
 			// })
-			, new Icon({
-				action: 'clones'
-				, name: 'Clones n Barrels'
-				, icon: 'barrel'
-				, path: 'sm'
-				, bits: 24
-			})
-			, new Icon({
-				action: 'sonic3000'
-				, name: 'Play Sonic 3000'
-				, icon: 'sonic-3000'
-				, path: 'ui'
-				, bits: 24
-			})
-			, new Icon({
-				action: 'numb'
-				, name: 'numb - linkin park.mp3.exe'
-				, icon: 'numb'
-				, path: 'apps'
-				, bits: 8
-			})
+			// , new Icon({
+			// 	action: 'clones'
+			// 	, name: 'Clones n Barrels'
+			// 	, icon: 'barrel'
+			// 	, path: 'sm'
+			// 	, bits: 24
+			// })
+			// , new Icon({
+			// 	action: 'sonic3000'
+			// 	, name: 'Play Sonic 3000'
+			// 	, icon: 'sonic-3000'
+			// 	, path: 'ui'
+			// 	, bits: 24
+			// })
+			// , new Icon({
+			// 	action: 'numb'
+			// 	, name: 'numb - linkin park.mp3.exe'
+			// 	, icon: 'numb'
+			// 	, path: 'apps'
+			// 	, bits: 8
+			// })
 			// , new Icon({
 			// 	action: 'letsvue'
 			// 	, name: 'Letsvue'
@@ -222,11 +223,11 @@ export class Desktop extends View
 			// 	, path: 'ui'
 			// 	, bits: 24
 			// })
-			, new Icon({
-				action: 'card-editor'
-				, name: 'Card Editor'
-				, icon: 3
-			})
+			// , new Icon({
+			// 	action: 'card-editor'
+			// 	, name: 'Card Editor'
+			// 	, icon: 3
+			// })
 		];
 
 		this.fileDb = FileDatabase.open('files', 1);

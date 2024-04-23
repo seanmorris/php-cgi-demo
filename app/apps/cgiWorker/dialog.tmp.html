@@ -11,7 +11,7 @@
 					<span class = "row normal-align" cv-if = "started">
 						[[runningIcon]]&nbsp;
 						<span>Cgi worker is running.</span>&nbsp;
-						<a href = "/php-wasm/drupal" target="_blank">Open Site</a>
+						<a href = "/php-wasm/drupal" target="_blank" cv-ref = "openLink">Open Site</a>
 					</span>
 
 					<span class = "row normal-align" cv-if = "!started">
@@ -21,7 +21,7 @@
 				</div>
 			</div>
 
-			<div class = "stretch-children cols padded">
+			<div class = "liquid cols padded">
 				<div class = "inset scroll abs-holder tall wide padded col rows">
 					<div class ="abs-fill scroll status-log" cv-ref = "log">
 						<div class = "contents" cv-each = "log:line">

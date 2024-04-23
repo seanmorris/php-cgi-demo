@@ -1,0 +1,85 @@
+.installer {
+	background-image: linear-gradient(#0001fc, #000000);
+}
+
+.installer h1 {
+	font-size: 2rem;
+	font-style: italic;
+	color: #FFF;
+	text-shadow: 0.25rem 0.25rem 0 #000000;
+	position: absolute;
+	top: 1.3rem;
+	left: 0.8rem;
+}
+
+.installer .panel {
+	background-color: #c0c0c0;
+	min-width: 660px;
+	max-height: 400px;
+	min-height: 340px;
+	margin: auto;
+	display: flex;
+	overflow: hidden;
+	/* resize: both; */
+}
+
+.installer .main > div:not(:empty) {
+	display: contents;
+}
+
+.installer section:not(:empty) {
+	width: 100%;
+}
+
+.installer .banner {
+	background-color: #008484 !important;
+	background-image: url(/ui/install-banner.png);
+	background-repeat: no-repeat;
+	width: 118px;
+	height: 258px;
+}
+
+.installer section > :not(.button-row) button {
+	position: relative;
+	width: 64px;
+	height: 64px;
+	padding: 10px;
+	margin-right: 1rem;
+}
+
+.installer section > :not(.button-row) button:after {
+	position: absolute;
+	top: 0;
+	left: 0;
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: 75%;
+	content: "";
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+
+.installer .panel button.install:after {
+	background-image: url(/w98/installer_generic_old-32-4bit.png);
+}
+
+.installer .panel button.uninstall:after {
+	background-image: url(/w98/recycle_bin_full_cool-32-8bit.png);
+}
+
+.installer .panel button.start-server:after {
+	background-image: url(/w98/network_normal_two_pcs-32-4bit.png);
+}
+
+.installer .panel button.backup:after {
+	background-image: url(/w98/backup_devices-32-4bit.png);
+}
+
+.installer .panel button.restore:after {
+	background-image: url(/w98/server_to_desktop-32-4bit.png);
+}
+
+.installer .panel button.exit:after {
+	background-image: url(/w98/check-32-4bit.png);
+}
