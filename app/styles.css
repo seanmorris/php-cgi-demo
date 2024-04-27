@@ -40,6 +40,10 @@ html, body, input, button, select {
 	font-size: 12pt;
 }
 
+select {
+	min-height: 1.5em;
+}
+
 p, h1 {
 	margin-block-start: 0.45em;
 	margin-block-end: 0.45em;
@@ -288,6 +292,10 @@ button.tight {
 	padding: 0px 6px;
 }
 
+input.subtle {
+	border: none;
+}
+
 .lower {
 	align-self: flex-end;
 }
@@ -343,6 +351,14 @@ label {
 
 .right {
 	align-self: flex-end;
+}
+
+.start {
+	align-items: flex-start;
+}
+
+.end {
+	align-items: flex-end;
 }
 
 input[type="checkbox"],
@@ -905,4 +921,12 @@ button input[type=checkbox] {
 
 .resize-container {
 
+}
+
+.no-empty:empty {
+	display: none;
+}
+
+.hidden {
+	display: none;
 }

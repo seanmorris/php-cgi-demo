@@ -1,27 +1,5 @@
 <hr />
-
 <div class = "row tight">
-
-	<button class = "square" title = "new file">
-		<img src = "/ui/new.png" />
-	</button>
-
-	<button class = "square"  title = "open file">
-		<img src = "/ui/open.png" />
-	</button>
-
-	<button cv-on = "click:save(event)" class = "square" title = "save file">
-		<img src = "/ui/save.png" />
-	</button>
-
-	<button class = "square"  title = "download file">
-		<img class = "icon16" src = "/w98/download-16-4bit.png" />
-	</button>
-
-	<button class = "square" title = "upload file">
-		<img class = "icon16" src = "/w98/system_restore-16-8bit.png" />
-	</button>
-
 	<button class = "square" title = "Github">
 		<img class = "icon16" src = "/apps/github-16-2bit.png" />
 	</button>
@@ -31,10 +9,10 @@
 		<img data-section-left class = "icon16" src = "/ui/left-sidebar-collapse.png" />
 	</button>
 
-	<button class = "square" title = "toggle right bar" cv-on = "click:toggleSection('right')">
+	<!-- <button class = "square" title = "toggle right bar" cv-on = "click:toggleSection('right')">
 		<img data-section-antiright class = "icon16" src = "/ui/right-sidebar-expand.png" />
 		<img data-section-right class = "icon16" src = "/ui/right-sidebar-collapse.png" />
-	</button>
+	</button> -->
 
 	<button class = "square" title = "toggle terminal" cv-on = "click:toggleSection('term')">
 		<img class = "icon16" src = "/w98/console_prompt-16-4bit.png" />
@@ -56,7 +34,7 @@
 
 			<input
 				class = "inset wide flat tight white"
-				value = "Repo: [[repoName]] [ [[branch]] ]"
+				value = "FS: [[repoName]] [ [[branch]] ]"
 				readonly = "true"
 			/>
 
@@ -79,13 +57,50 @@
 	</div>
 </div>
 
+<div class = "row tight">
+	<button class = "square" title = "new file" cv-on = "click:newFile">
+		<img src = "/ui/new.png" />
+	</button>
+
+	<button class = "square" title = "new folder" cv-on = "click:newDirectory">
+		<img src = "/w98/directory_favorites-16-8bit.png" />
+	</button>
+
+	<button class = "square"  title = "open file">
+		<img src = "/ui/open.png" />
+	</button>
+
+	<button cv-on = "click:save(event)" class = "square" title = "save file">
+		<img src = "/ui/save.png" />
+	</button>
+
+	<button cv-on = "click:renameFile(event)" class = "square" title = "rename file">
+		<img class = "icon16" src = "/w98/signature-16-4bit.png" />
+	</button>
+
+	<button cv-on = "click:deleteFile(event)" class = "square" title = "delete">
+		<img class = "icon16" src = "/ui/delete.png" />
+	</button>
+
+	<button cv-on = "click:refresh(event)" class = "square" title = "refresh">
+		<img class = "icon16" src = "/arrow-circle.png" />
+	</button>
+
+	<button cv-on = "click:downloadFile(event)" class = "square"  title = "download file">
+		<img class = "icon16" src = "/w98/download-16-4bit.png" />
+	</button>
+
+	<button  cv-on = "click:uploadFile(event)" class = "square" title = "upload file">
+		<img class = "icon16" src = "/w98/system_restore-16-8bit.png" />
+	</button>
+</div>
+
 <hr />
 
 <div class = "frame cols liquid collapse">
 
 	<div data-section-left class = "collapse rows" style = "flex-basis: 25%;">
-		<div class = "row tight tabs">
-
+		<div class = "row tight tabs hidden">
 			<div class = "tab" tabindex="0">
 				<img class = "icon16" src = "/w98/network_drive-16-4bit.png" title = "repo root" />
 			</div>
@@ -106,8 +121,7 @@
 				<img class = "icon16" src = "/w98/directory_program_group_small-16-4bit.png"  title = "actions" />
 			</div> -->
 		</div>
-
-		<div class = "inset liquid white">
+		<div class = "inset liquid white rows">
 			<div cv-each = "files:file:f" class = "scroll treeview wide">
 				<div class = "">[[file]]</div>
 			</div>
@@ -123,7 +137,7 @@
 				<div class = "row inset lower wide white nowrap">
 
 					<button cv-on = "click:selectParent(event);" class = "flat tight white">
-						<img src = "/ui/dir-up.png" />
+						<img src = "/ui/dir-up.png" cv-on = "click:upDirectory" />
 					</button>
 
 					File: [[filename]]
@@ -143,7 +157,7 @@
 			</div>
 		</div>
 
-		<div data-control-sector class = "white inset scroll" style = "flex-basis: 75%;">
+		<div data-control-sector class = "white inset scroll" style = "min-height: 75%;">
 			<div class = "liquid abs-holder [[viewRaw]]">
 				<div class = "abs-fill plain">
 					[[plain]]
@@ -184,5 +198,5 @@
 
 <div class = "status row">
 	<div class = "label inset">[[filename]]&nbsp;</div>
-	<div class = "label inset" cv-if = "chars">type: [[filetype]] size: [[chars]]</div>
+	<div class = "label inset"><span cv-if = "chars">type: [[filetype]] size: [[chars]]</span>&nbsp;</div>
 </div>

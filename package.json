@@ -8,7 +8,7 @@
 	"scripts": {
 		"start": "brunch watch --server",
 		"build": "brunch build --production",
-		"php": "cp -rfv node_modules/php-wasm/php-web-drupal.* app/assets/; cp -rfv node_modules/php-cgi-wasm/php-cgi-worker-drupal.* app/assets/"
+		"php": "cp -rfv node_modules/php-wasm/php-web.* app/assets/; cp -rfv node_modules/php-cgi-wasm/php-cgi-worker.* app/assets/"
 	},
 	"dependencies": {
 		"brace": "^0.11.1",

@@ -16,13 +16,29 @@ import { Image as ImageControl } from '../../control/Image';
 import { Plaintext as PlaintextControl } from '../../control/Plaintext';
 
 import { Console as Terminal } from 'subspace-console/Console';
+
 import { GitHubBackend } from './GitHubBackend';
+import { IdbfsBackend } from './IdbfsBackend';
+
+const fileSystems = [
+	{
+		type: 'github',
+		repo: 'nynex95',
+		user: 'seanmorris',
+	},
+	{
+		type: 'idbfs-proxy'
+	},
+	{
+		type: 'nynex-fs'
+	}
+];
 
 export class RepoBrowser extends Task
 {
 	static helpText = 'Browse projects on github.';
 
-	title    = 'Repo Browser';
+	title    = 'Omni Explorer';
 	icon     = '/w95/73-16-4bit.png';
 	template = require('./main.tmp');
 	useProxy = false;
@@ -31,14 +47,10 @@ export class RepoBrowser extends Task
 	{
 		super(args, prev, term, taskList, taskCmd, taskPath);
 
-		const inputPath = (taskPath[0] || 'seanmorris/nynex95').split('/');
-		this.username = inputPath.shift()   || 'seanmorris';
-		this.reponame = inputPath.shift()   || 'nynex95';
+		const inputPath = (taskPath[0] || '/').split('/');
+		// this.username = inputPath.shift()   || 'seanmorris';
+		// this.reponame = inputPath.shift()   || 'nynex95';
 		this.filepath = inputPath.join('/');
-
-		console.log(inputPath);
-
-		this.current = null;
 
 		this.window.args.branch = 'master';
 
@@ -48,6 +60,15 @@ export class RepoBrowser extends Task
 		this.window.args.viewRaw = 'view-control-rendered';
 
 		this.window.args.hasSource = false;
+
+		this.window.upDirectory = event => this.upDirectory(event);
+		this.window.newDirectory = event => this.newDirectory(event);
+		this.window.refresh = event => this.refresh(event);
+		this.window.newFile = event => this.newFile(event);
+		this.window.renameFile = event => this.renameFile(event);
+		this.window.deleteFile = event => this.deleteFile(event);
+		this.window.downloadFile = event => this.downloadFile(event);
+		this.window.uploadFile = event => this.uploadFile(event);
 
 		this.window.viewControl = (type) => {
 			this.window.args.viewRaw = `view-control-${type}`;
@@ -73,68 +94,7 @@ export class RepoBrowser extends Task
 		this.window.classes['hide-right'] = true;
 
 		this.window.save = (event) => {
-
-			const raw = this.window.args.plain.args.content;
-
-			const branch  = 'master';
-			const message = 'Nynex self-edit.';
-			const content = btoa(unescape(encodeURIComponent(raw)));
-			const sha     = this.window.args.sha;
-
-			// const url = new URL(this.window.args.url).pathname;
-
-			const postChange  = {message, content, sha};
-
-			const headers = {
-				'Content-Type': 'application/json'
-				, Accept:       'application/vnd.github.v3.json'
-			};
-
-			const gitHubToken = GitHub.getToken();
-
-			let loginPromise = Promise.resolve();
-
-			if(gitHubToken && gitHubToken.access_token)
-			{
-				headers.Authorization = `token ${gitHubToken.access_token}`;
-			}
-			else
-			{
-				loginPromise = home.run('github').thread
-
-				loginPromise.then(result=>{
-					this.window.args.repoIcons = [];
-					this.loadRepos();
-				});
-			}
-
-			loginPromise.then(()=>{
-				const gitHubToken = GitHub.getToken();
-				const method = 'PUT';
-				const body   = JSON.stringify(postChange);
-				const mode   = 'cors';
-
-				const credentials = 'omit';
-
-				if(gitHubToken && gitHubToken.access_token)
-				{
-					headers.Authorization = `token ${gitHubToken.access_token}`;
-				}
-				else
-				{
-					return;
-				}
-
-				return fetch(
-					this.window.args.repoUrl
-						+ '/contents/'
-						+ this.window.args.filepath
-					, {method, headers, body, mode}
-				).then(response => response.json()
-				).then(json => {
-					this.window.args.sha = json.content.sha;
-				});
-			});
+			this.backend.saveFile({browser:this});
 		}
 
 		this.window.toggleSection = (section) => {
@@ -198,26 +158,37 @@ export class RepoBrowser extends Task
 					return;
 				}
 
-				console.log(v);
+				Home.instance().run('cgi-worker', ['--start-quiet'], true);
 
+				/*/
 				const folder = new Folder({
-					expanded:   true
+					expanded: true
+					, backend:  this.backend = new GitHubBackend
 					, browser:  this
 					, pathOpen: this.filepath
 					, url:      v + '/contents?ref=master&t=' + Date.now()
 				}, this.window);
+				/*/
+				const folder = new Folder({
+					expanded: true
+					, backend:  this.backend = new IdbfsBackend
+					, browser:  this
+					, pathOpen: this.filepath
+					, url:      '/'
+				}, this.window);
+				//*/
 
 				this.window.args.files.push(folder);
 
-				if(!this.filepath)
-				{
-					this.window.onNextFrame(()=>this.loadFile('README.md'));
-				}
-				else
-				{
-					// this.window.onNextFrame(()=>this.loadFile(this.filepath));
-					// folder.select();
-				}
+				// if(!this.filepath)
+				// {
+				// 	this.window.onNextFrame(()=>this.loadFile('README.md'));
+				// }
+				// else
+				// {
+				// 	// this.window.onNextFrame(()=>this.loadFile(this.filepath));
+				// 	// folder.select();
+				// }
 
 				this.loadRepos();
 
@@ -226,7 +197,7 @@ export class RepoBrowser extends Task
 
 			this.window.args.bindTo('filename', v => {
 
-				// v && this.print(`Loading file: "${v}"`);
+				v && this.print(`Loading file: "${v}"`);
 
 				if(this.window.args.plain)
 				{
@@ -361,7 +332,7 @@ export class RepoBrowser extends Task
 
 			if(this.filepath)
 			{
-				this.loadFile(this.filepath);
+				// this.loadFile(this.filepath);
 			}
 		});
 
@@ -373,13 +344,25 @@ export class RepoBrowser extends Task
 		this.endpointRepos = `${this.endpoint}repos`
 		this.startingRepo  = `${this.username || 'seanmorris'}/${this.reponame || 'nynex95'}`;
 
-		console.log(this.username, this.reponame);
+		// console.log(this.username, this.reponame);
 
 		this.window.args.repoUrl   = `${this.endpointRepos}/${this.startingRepo}`;
 		this.window.args.repoName  = this.startingRepo;
 		this.window.args.repoIcons = false;
 
 		this.window.args.repoIcons = [];
+	}
+
+	upDirectory(event)
+	{
+		if(!this.parentDir || !(this.parentDir instanceof Folder))
+		{
+			console.log(this.parentDir);
+
+			return;
+		}
+
+		this.parentDir.select();
 	}
 
 	print(line)
@@ -390,75 +373,207 @@ export class RepoBrowser extends Task
 		}
 	}
 
-	loadFile(filepath)
+	refresh()
 	{
-		const headers = {Accept: 'application/vnd.github.v3.json'};
-
-		const gitHubToken = GitHub.getToken();
-
-		if(gitHubToken && gitHubToken.access_token)
+		if(!this.currentDir)
 		{
-			headers.Authorization = `token ${gitHubToken.access_token}`;
+			return;
 		}
 
-		const fileUrl = this.window.args.repoUrl
-			+ '/contents/'
-			+ filepath;
+		if(this.currentDir === this.current)
+		{
+			this.currentDir.select();
+		}
+		else
+		{
+			this.currentDir.expand(null, null, null, true);
+		}
+	}
 
-		const githubBackend = new GitHubBackend;
+	newFile()
+	{
+		console.log(this.currentDir);
 
-		githubBackend.loadFile({
-			browser: this
-			, uri: fileUrl
-			, filepath
+		const subArgs = {
+			template:    require('./edit-name.tmp.html')
+			, title:     'New File'
+			, directory: this.currentDir.args.url
+			, type:      'create'
+			, width:     '400px'
+			, minWidth:  '400px'
+			, height:    '196px'
+			, minHeight: '196px'
+		};
+
+		const subWindow = this.openSubWindow(subArgs);
+
+		subWindow.save = () => {
+			const newPath = subArgs.directory + '/' + subArgs.newName;
+			this.backend.writeFile({path: newPath, content: ''})
+			.then(() => this.refresh());
+			subWindow.close();
+		};
+
+		subWindow.cancel = () => subWindow.close();
+
+		subWindow.focus();
+	}
+
+	newDirectory()
+	{
+		console.log(this.currentDir);
+
+		const subArgs = {
+			template:    require('./edit-name.tmp.html')
+			, title:     'New Directory'
+			, directory: this.currentDir.args.url
+			, type:      'create'
+			, width:     '400px'
+			, minWidth:  '400px'
+			, height:    '196px'
+			, minHeight: '196px'
+		};
+
+		const subWindow = this.openSubWindow(subArgs);
+
+		subWindow.save = () => {
+			const newPath = subArgs.directory + '/' + subArgs.newName;
+			this.backend.mkdir({path: newPath})
+			.then(() => this.refresh());
+			subWindow.close();
+		};
+
+		subWindow.cancel = () => subWindow.close();
+
+		subWindow.focus();
+	}
+
+	renameFile()
+	{
+		console.log(this.selected);
+
+		const subArgs = {
+			template:    require('./edit-name.tmp.html')
+			, title:     'Rename File'
+			, path: this.selected.args.url
+			, type:      'rename'
+			, width:     '400px'
+			, minWidth:  '400px'
+			, height:    '196px'
+			, minHeight: '196px'
+		};
+
+		const parts = subArgs.path.split('/');
+		const directory = parts.slice(0, parts.length - 1).join('/');
+
+		subArgs.newName = parts[parts.length -1];
+
+		const subWindow = this.openSubWindow(subArgs);
+
+		subWindow.save = () => {
+			this.backend
+			.renameFile({newName: directory + '/' + subArgs.newName, oldName: subArgs.path})
+			.then(() => {
+				this.refresh()
+				subWindow.close();
+			});
+		};
+
+		subWindow.cancel = () => subWindow.close();
+
+		subWindow.focus();
+	}
+
+	deleteFile()
+	{
+		if(!this.selected)
+		{
+			return;
+		}
+
+		if(this.selected.args.file.info.object.isFolder)
+		{
+			this.backend.deleteFolder({path: '/' + this.selected.args.file.path})
+			.then(() => this.refresh());
+		}
+		else
+		{
+			this.backend.deleteFile({path: '/' + this.selected.args.file.path})
+			.then(() => this.refresh());
+		}
+	}
+
+	downloadFile()
+	{
+		const path = '/' + this.selected.args.file.path;
+		const parts = path.split('/');
+
+		this.backend.readFile({path}).then(content => {
+			content = new TextDecoder().decode(content);
+			const link = document.createElement('a');
+			link.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
+			link.setAttribute('download', parts[parts.length - 1]);
+
+			link.click();
 		});
 	}
 
+	uploadFile()
+	{
+
+	}
+
+	loadFile(filepath)
+	{}
+
+	saveFile(event)
+	{}
+
 	loadRepos(page = 0)
 	{
-		const gitHubToken = GitHub.getToken();
+		// const gitHubToken = GitHub.getToken();
 
-		page || this.print(`Scanning for repositories...`);
+		// page || this.print(`Scanning for repositories...`);
 
-		this.window.args.repos = this.window.args.repos || false;
+		// this.window.args.repos = this.window.args.repos || false;
 
-		const reposUrl = `${this.endpoint}user/repos?per_page=100&page=${1+parseInt(page)}`
-		const headers  = {};
+		// const reposUrl = `${this.endpoint}user/repos?per_page=100&page=${1+parseInt(page)}`
+		// const headers  = {};
 
-		if(gitHubToken && gitHubToken.access_token)
-		{
-			headers.Authorization = `token ${gitHubToken.access_token}`;
-		}
+		// if(gitHubToken && gitHubToken.access_token)
+		// {
+		// 	headers.Authorization = `token ${gitHubToken.access_token}`;
+		// }
 
-		fetch(reposUrl, {headers}).then(r=>r.json()).then((repos)=>{
+		// fetch(reposUrl, {headers}).then(r=>r.json()).then((repos)=>{
 
-			if(!repos || !repos.length)
-			{
-				return;
-			}
+		// 	if(!repos || !repos.length)
+		// 	{
+		// 		return;
+		// 	}
 
-			repos.map && this.window.args.repoIcons.push(...repos.map(repo => {
+		// 	repos.map && this.window.args.repoIcons.push(...repos.map(repo => {
 
-				this.window.args.repos = true;
+		// 		this.window.args.repos = true;
 
-				this.print(`Found repo "${repo.name}"`);
+		// 		this.print(`Found repo "${repo.name}"`);
 
-				return new Icon({
-					action: () => {
-						this.window.args.repoName = repo.full_name;
-						this.window.args.repoUrl  = repo.url;
-					}
-					, name:  repo.name
-					, icon: 'network_drive'
-					, path: 'w98'
-					, bits: 4
-				});
-			}));
+		// 		return new Icon({
+		// 			action: () => {
+		// 				this.window.args.repoName = repo.full_name;
+		// 				this.window.args.repoUrl  = repo.url;
+		// 			}
+		// 			, name:  repo.name
+		// 			, icon: 'network_drive'
+		// 			, path: 'w98'
+		// 			, bits: 4
+		// 		});
+		// 	}));
 
-			if(repos && repos.length)
-			{
-				this.loadRepos(page + 1);
-			}
-		});
+		// 	if(repos && repos.length)
+		// 	{
+		// 		this.loadRepos(page + 1);
+		// 	}
+		// });
 	}
 }

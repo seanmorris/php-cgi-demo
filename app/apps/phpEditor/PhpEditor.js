@@ -93,9 +93,9 @@ export class PhpEditor extends Task
 	return 'Ran @' . (new DateTime)->format('Y-m-d h:i:s.v') . ' UTC';
 
 })();`;
-		const Php = require('php-wasm/PhpWebDrupal').PhpWebDrupal;
+		const Php = require('php-wasm/PhpWeb').PhpWeb;
 
-		const php = new Php({persist: {mountPath: '/persist'}});
+		const php = new Php({persist:[{mountPath: '/persist'}, {mountPath:'/config'}]});
 
 		this.window.listen(php, 'ready', () => {
 			this.window.classes.loading = false;

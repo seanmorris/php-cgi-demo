@@ -1,0 +1,44 @@
+<section class = "step-install-options rows" cv-if = "step" cv-is = "step-install-options">
+	<div class = "rows liquid padded wide">
+		<h2>Install Package</h2>
+		<div class = "rows liquid">
+			<label class = "rows v-padded">
+				<span class = "row left">Software:</span>
+				<select class = "row stretch inset white" cv-each = "packages:package:name" cv-on = "change:packageSelected">
+					<option value = "[[name]]">[[package.name]]</option>
+				</select>
+			</label>
+
+			<label class = "rows v-padded">
+				<span class = "row left">Install Path:</span>
+				<div class = "row stretch inset">
+					/persist/<input class = "wide subtle" cv-bind = "installPath" />
+				</div>
+				<small class = "left">The path inside the filesystem where the package will be installed.</small>
+			</label>
+
+			<label class = "rows v-padded">
+				<span class = "row left">Virtual Host Path Prefix:</span>
+				<div class = "row stretch inset">
+					/php-wasm/<input class = "wide subtle" cv-bind = "installPrefix" />
+				</div>
+				<small class = "left">The URL path where the app will be accessible.</small>
+			</label>
+
+			<label class = "rows v-padded">
+				<span class = "row left">Virtual Host Directory:</span>
+				<div class = "row stretch inset">
+					/persist/<input class = "wide subtle" cv-bind = "installvHostDir" />
+				</div>
+				<small class = "left">The public directory of the package.</small>
+			</label>
+
+
+		</div>
+	</div>
+
+	<div class = "row right padded button-row">
+		<button class = "padded" cv-on = "click:backToMenu">back</button>
+		<button class = "padded" cv-on = "click:confirmOptions" cv-ref = "nextButtonOptions">next</button>
+	</div>
+</section>

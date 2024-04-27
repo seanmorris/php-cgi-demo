@@ -1,4 +1,4 @@
-import PHP from 'php-cgi-wasm/php-cgi-worker-drupal';
+import PHP from 'php-cgi-wasm/php-cgi-worker';
 import parseResponse from './parseResponse';
 
 const putEnv = (php, key, value) => php.ccall(
@@ -62,16 +62,18 @@ export class PhpCgi
 	cookies    = new Map;
 	count      = 0;
 
-	constructor({docroot, rewrite, cookies, ...args} = {})
+	constructor({docroot, prefix, rewrite, cookies, ...args} = {})
 	{
 		this.docroot = docroot || '';
 		this.cookies = cookies || '';
+		this.prefix  = prefix  || 'php-wasm';
 		this.rewrite = rewrite || this.rewrite;
 		this.phpArgs = args;
 
 		this.maxRequestAge    = args.maxRequestAge || 0;
 		this.staticCacheTime  = args.staticCacheTime || 0;
 		this.dynamicCacheTime = args.dynamicCacheTime || 0;
+		this.vHosts = args.vHosts || [];
 
 		this.env = {};
 
@@ -116,20 +118,31 @@ export class PhpCgi
 			, contentType
 		} = await breakoutRequest(request);
 
-		const originalPath = url.pathname;
+		let docroot = this.docroot;
+
+		for(const {pathPrefix, directory} of this.vHosts)
+		{
+			if(pathPrefix === url.pathname.substr(0, pathPrefix.length))
+			{
+				docroot = directory;
+				break;
+			}
+		}
 
 		const rewrite = this.rewrite(url.pathname);
+
+		console.log(rewrite);
 
 		let scriptName, path;
 
 		if(typeof rewrite === 'object')
 		{
 			scriptName = rewrite.scriptName;
-			path = this.docroot + rewrite.path;
+			path = docroot + rewrite.path;
 		}
 		else
 		{
-			scriptName = path = this.docroot + path;
+			scriptName = path = docroot + path;
 		}
 
 		const cache  = await caches.open('static-v1');
@@ -151,6 +164,8 @@ export class PhpCgi
 
 		return new Promise(async accept => {
 
+			let originalPath = url.pathname;
+
 			if(path.substr(-4) !== '.php')
 			{
 				const aboutPath = php.FS.analyzePath(path);
@@ -164,9 +179,13 @@ export class PhpCgi
 					accept(response);
 					return;
 				}
+				else if(aboutPath.exists && php.FS.isDir(aboutPath.object.mode) && '/' !== originalPath[ -1 + originalPath.length  ])
+				{
+					originalPath += '/'
+				}
 
 				// Rewrite to index
-				path = this.docroot + '/index.php';
+				path = docroot + '/index.php';
 			}
 
 			await navigator.locks.request('php-storage', async () => {
@@ -175,8 +194,6 @@ export class PhpCgi
 				{
 					return accept(new Response('408: Request Timed Out.', { status: 408 }));
 				}
-
-				const docroot = this.docroot;
 
 				this.input  = ['POST', 'PUT', 'PATCH'].includes(method) ? post.split('') : [];
 				this.output = [];
@@ -190,6 +207,8 @@ export class PhpCgi
 				putEnv(php, 'REMOTE_ADDR', '127.0.0.1');
 				putEnv(php, 'HTTP_HOST', selfUrl.host);
 				putEnv(php, 'REQUEST_SCHEME', selfUrl.protocol.substr(0, selfUrl.protocol.length - 0));
+
+				console.log({docroot, originalPath, scriptName, path});
 
 				putEnv(php, 'DOCUMENT_ROOT', docroot);
 				putEnv(php, 'REQUEST_URI', originalPath);
@@ -207,6 +226,7 @@ export class PhpCgi
 				{
 					if(php._main() === 0) // PHP exited with code 0
 					{
+						console.warn('Done');
 						await new Promise((accept,reject) => php.FS.syncfs(false, err => {
 							if(err) reject(err);
 							else    accept();
@@ -217,8 +237,7 @@ export class PhpCgi
 				{
 					console.warn(error);
 					this.refresh();
-					accept(new Response('500: Internal Server Error.', { status: 500 }));
-					return;
+					return accept(new Response('500: Internal Server Error.', { status: 500 }));
 				}
 
 				++this.count;
@@ -253,7 +272,7 @@ export class PhpCgi
 					headers.Location = parsedResponse.headers.Location;
 				}
 
-				accept(new Response(parsedResponse.body, { headers, status, url }));
+				accept(new Response(parsedResponse.body || '', { headers, status, url }));
 	 		})
 		});
 	}
@@ -261,7 +280,21 @@ export class PhpCgi
 	async analyzePath(path)
 	{
 		const result = (await this.php).FS.analyzePath(path);
-		return {...result, object: undefined, parentObject: undefined};
+
+		const object = {
+			id: result.object.id
+			, mode : result.object.mode
+			, mount: {
+				mountpoint: result.object.mount.mountpoint
+				, mounts: result.object.mount.mounts.map(m => m.mountpoint)
+			}
+			, isDevice: result.object.isDevice
+			, isFolder: result.object.isFolder
+			, read: result.object.read
+			, write: result.object.write
+		};
+
+		return {...result, object, parentObject: undefined};
 	}
 
 	async readdir(path)
@@ -274,15 +307,33 @@ export class PhpCgi
 		return (await this.php).FS.readFile(path);
 	}
 
+	async stat(path)
+	{
+		return (await this.php).FS.stat(path);
+	}
+
 	async mkdir(path)
 	{
 		const php = (await this.php);
-		const result = php.FS.mkdir(path);
-		return new Promise(accept => navigator.locks.request('php-storage', () => {
-			php.FS.syncfs(false, err => {
+		const _result = php.FS.mkdir(path);
+		const result = {
+			id: _result.id
+			, mode : _result.mode
+			, mount: {
+				mountpoint: _result.mount.mountpoint
+				, mounts: _result.mount.mounts.map(m => m.mountpoint)
+			}
+			, isDevice: _result.isDevice
+			, isFolder: _result.isFolder
+			, read: _result.read
+			, write: _result.write
+		};
+		return new Promise(accept => navigator.locks.request('php-storage', async () => {
+			await new Promise(_accept => php.FS.syncfs(false, err => {
 				if(err) throw err;
 				accept(result);
-			});
+				_accept()
+			}));
 		}));
 	}
 
@@ -290,11 +341,24 @@ export class PhpCgi
 	{
 		const php = (await this.php);
 		const result = php.FS.rmdir(path);
-		return new Promise(accept => navigator.locks.request('php-storage', () => {
-			php.FS.syncfs(false, err => {
+		return new Promise(accept => navigator.locks.request('php-storage', async () => {
+			await new Promise(_accept => php.FS.syncfs(false, err => {
 				if(err) throw err;
 				accept(result);
-			});
+				_accept()
+			}));
+		}));
+	}
+	async rename(path, newPath)
+	{
+		const php = (await this.php);
+		const result = php.FS.rename(path, newPath);
+		return new Promise(accept => navigator.locks.request('php-storage', async () => {
+			await new Promise(_accept => php.FS.syncfs(false, err => {
+				if(err) throw err;
+				accept(result);
+				_accept()
+			}));
 		}));
 	}
 
@@ -302,11 +366,12 @@ export class PhpCgi
 	{
 		const php = (await this.php);
 		const result = php.FS.writeFile(path, data, options);
-		return new Promise(accept => navigator.locks.request('php-storage', () => {
-			php.FS.syncfs(false, err => {
+		return new Promise(accept => navigator.locks.request('php-storage', async () => {
+			await new Promise(_accept => php.FS.syncfs(false, err => {
 				if(err) throw err;
 				accept(result);
-			});
+				_accept()
+			}));
 		}));
 	}
 
@@ -314,11 +379,12 @@ export class PhpCgi
 	{
 		const php = (await this.php);
 		const result = php.FS.unlink(path);
-		return new Promise(accept => navigator.locks.request('php-storage', () => {
-			php.FS.syncfs(false, err => {
+		return new Promise(accept => navigator.locks.request('php-storage', async () => {
+			await new Promise(_accept => php.FS.syncfs(false, err => {
 				if(err) throw err;
 				accept(result);
-			});
+				_accept()
+			}));
 		}));
 	}
 
@@ -334,15 +400,17 @@ export class PhpCgi
 			, maxRequestAge: this.maxRequestAge
 			, staticCacheTime: this.staticCacheTime
 			, dynamicCacheTime: this.dynamicCacheTime
+			, vHosts: this.vHosts
 		};
 	}
 
-	async setSettings({docroot, maxRequestAge, staticCacheTime, dynamicCacheTime})
+	async setSettings({docroot, maxRequestAge, staticCacheTime, dynamicCacheTime, vHosts})
 	{
 		this.docroot = docroot ?? this.docroot;
 		this.maxRequestAge = maxRequestAge ?? this.maxRequestAge;
 		this.staticCacheTime = staticCacheTime ?? this.staticCacheTime;
 		this.dynamicCacheTime = dynamicCacheTime ?? this.dynamicCacheTime;
+		this.vHosts = vHosts ?? this.vHosts;
 	}
 
 	async getEnvs()
@@ -381,8 +449,6 @@ export class PhpCgi
 		const initJson = php.FS.readFile(initPath, {encoding: 'utf8'});
 		const init = JSON.parse(initJson || {});
 		const {settings, env} = init;
-
-		console.log(init);
 
 		this.setSettings(settings);
 		this.setEnvs(env);

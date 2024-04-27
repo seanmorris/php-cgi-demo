@@ -12,15 +12,24 @@
 	left: 0.8rem;
 }
 
+.installer h2 {
+	margin: 0.5rem 0;
+}
+
 .installer .panel {
 	background-color: #c0c0c0;
-	min-width: 660px;
-	max-height: 400px;
-	min-height: 340px;
+	width: 100%;
+	max-width: 650px;
+	max-height: 500px;
+	min-height: 440px;
 	margin: auto;
 	display: flex;
 	overflow: hidden;
 	/* resize: both; */
+}
+
+.installer section.rows:empty {
+	display: none;
 }
 
 .installer .main > div:not(:empty) {
@@ -45,6 +54,8 @@
 	height: 64px;
 	padding: 10px;
 	margin-right: 1rem;
+	display: inline-block;
+	flex-shrink: 0;
 }
 
 .installer section > :not(.button-row) button:after {
@@ -86,4 +97,8 @@
 
 .installer .panel button.open-site:after {
 	background-image: url(/w95/14-32-4bit.png);
+}
+
+.installer .panel button.view-files:after {
+	background-image: url(/w98/directory_open_net_web_documents-32-4bit.png);
 }

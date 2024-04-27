@@ -45,8 +45,10 @@
 	margin-left: 1em;
 }
 
-.treeview span:focus,
-.treeview span:focus label{
+/* .treeview span:focus,
+.treeview span:focus label, */
+.treeview span.focus,
+.treeview span.focus label{
 	background-color: #000082;
 	color: white;
 }

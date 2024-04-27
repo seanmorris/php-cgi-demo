@@ -6,9 +6,10 @@ set_error_handler(function(...$args) use($stdErr, &$errors){
 	fwrite($stdErr, print_r($args,1));
 });
 
-$docroot = '/persist/drupal-7.95';
+$docroot = '/persist';
 
 unlink($docroot);
+mkdir($docroot, 0777, true);
 
 $zip = new ZipArchive;
 

@@ -14,7 +14,8 @@ export class PhpTask extends Task
 	init()
 	{
 		const Php = require('php-wasm/PhpWeb').PhpWeb;
-		const php = new Php({locateFile: (x) => `/${x}`});
+
+		const php = new Php({persist:[{mountPath: '/persist'}, {mountPath:'/config'}]});
 
 		this.php = php;
 

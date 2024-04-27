@@ -20,6 +20,65 @@ const reloadPhp = () => {
 	});
 }
 
+const packages = {
+	'drupal-7': {
+		name:  'Drupal 7',
+		file:  '/backups/drupal-7.95.zip',
+		path:  'drupal-7.95',
+		vHost: 'drupal',
+		dir:   'drupal-7.95',
+	},
+	// 'drupal-8': {
+	// 	name:  'Drupal 8',
+	// 	file:  '/backups/drupal-8.zip',
+	// 	path:  'drupal-8',
+	// 	vHost: 'drupal-8',
+	// 	dir:   'drupal-8/web',
+	// },
+	// 'codeigniter-3': {
+	// 	name:  'CodeIgniter 3',
+	// 	file:  '/backups/codeigniter-3.zip',
+	// 	path:  'codeigniter-3',
+	// 	vHost: 'codeigniter-3',
+	// 	dir:   'codeigniter-3',
+	// },
+	'codeigniter-4': {
+		name:  'CodeIgniter 4',
+		file:  '/backups/codeigniter-4.zip',
+		path:  'codeigniter-4',
+		vHost: 'codeigniter-4',
+		dir:   'codeigniter-4/public',
+	},
+	// 'cakephp-5': {
+	// 	name:  'CakePHP 5',
+	// 	file:  '/backups/cakephp-5.zip',
+	// 	path:  'cakephp-5',
+	// 	vHost: 'cakephp-5',
+	// 	dir:   'cakephp-5/webroot/',
+	// },
+	// 'getsimple-3': {
+	// 	name:  'GetSimpleCMS 3',
+	// 	file:  '/backups/GetSimpleCMS-3.3.16.zip',
+	// 	path:  'getsimple-3',
+	// 	vHost: 'getsimple-3',
+	// 	dir:   'getsimple-3',
+	// },
+	'laminas-3': {
+		name:  'Laminas 3',
+		file:  '/backups/laminas-3.zip',
+		path:  'laminas-3',
+		vHost: 'laminas-3',
+		dir:   'laminas-3/public',
+	},
+	'laravel-11': {
+		name:  'Laravel 11',
+		file:  '/backups/laravel-11.zip',
+		path:  'laravel-11',
+		vHost: 'laravel-11',
+		dir:   'laravel-11/public',
+	},
+};
+
 const incomplete = new Map;
 
 export class Drupal extends Task
@@ -37,16 +96,28 @@ export class Drupal extends Task
 		this.window.templates['step-1'] = require('./step-1.tmp');
 		this.window.templates['step-2'] = require('./step-2.tmp');
 		this.window.templates['step-3'] = require('./step-3.tmp');
+		this.window.templates['step-waiting'] = require('./step-waiting.tmp');
+		this.window.templates['step-install-options'] = require('./step-install-options.tmp');
+
+		this.window.args.packages = packages;
 
 		this.window.args.minWidth  = `720px`;
-		this.window.args.minHeight = `480px`;
+		this.window.args.minHeight = `520px`;
 
-		this.window.args.width     = `800px`;
-		this.window.args.height    = `640px`;
+		if(!Home.instance().args.isMobile)
+		{
+			this.window.args.width  = `800px`;
+			this.window.args.height = `640px`;
+		}
+		else
+		{
+			this.window.args.width  = `100vw`;
+			this.window.args.height = `100vh`;
+		}
 
 		this.init = Date.now();
 
-		const Php = require('php-wasm/PhpWebDrupal').PhpWebDrupal;
+		const Php = require('php-wasm/PhpWeb').PhpWeb;
 
 		this.php = new Php({persist:[{mountPath: '/persist'}, {mountPath:'/config'}]});
 
@@ -55,6 +126,7 @@ export class Drupal extends Task
 		this.window.args.content = '';
 		this.window.args.installPercent = 0;
 		this.window.args.confirm = 0;
+		// this.window.args.step = 'step-install-options';
 		this.window.args.step = 'step-1';
 
 		this.window.args.bindTo('confirm', v => {
@@ -66,15 +138,17 @@ export class Drupal extends Task
 			}
 		});
 
-		// this.php.addEventListener('output', event => {
-		// 	console.log(event.detail);
-		// });
+		this.php.addEventListener('output', event => {
+			console.log(event.detail);
+		});
 
 		this.window.initFilesystem  = event => this.initFilesystem(event);
 
-		this.window.confirmInitFilesystem = event => this.confirmInitFilesystem(event);
+		this.window.confirmInitFilesystem  = event => this.confirmInitFilesystem(event);
 		this.window.confirmClearFilesystem = event => this.confirmClearFilesystem(event);
-		this.window.confirmRestoreSite = event => this.confirmRestoreSite(event);
+		this.window.confirmOptions         = event => this.confirmOptions(event);
+		this.window.confirmRestoreSite     = event => this.confirmRestoreSite(event);
+		this.window.packageSelected = (...args) => this.packageSelected(...args);
 
 		this.window.clearFilesystem = event => this.clearFilesystem(event);
 		this.window.startServer     = event => this.startServer(event);
@@ -82,6 +156,8 @@ export class Drupal extends Task
 		this.window.backupSite      = event => this.backupSite(event);
 		this.window.restoreSite     = event => this.restoreSite(event);
 		this.window.backToMenu      = event => this.backToMenu(event);
+		this.window.viewAllFiles    = event => this.viewAllFiles(event);
+		this.window.viewFiles       = event => this.viewFiles(event);
 
 		this.window.listen(navigator.serviceWorker, 'message', event => {
 
@@ -108,6 +184,24 @@ export class Drupal extends Task
 		// 		return (...params)  => this.sendMessage(action, params);
 		// 	}
 		// });
+
+		this.window.args.bindTo('selectedPackage', v => {
+			console.log(v);
+			if(!packages[v])
+			{
+				return;
+			}
+
+			const pkg = packages[v];
+
+			this.window.args.installPath   = pkg.path;
+			this.window.args.installPrefix = pkg.vHost;
+			this.window.args.installZip    = pkg.file;
+			this.window.args.installvHostDir = pkg.dir;
+		});
+
+		this.window.args.selectedPackage = 'drupal-7';
+
 
 		return Bindable.make(this);
 	}
@@ -138,7 +232,7 @@ export class Drupal extends Task
 	initFilesystem()
 	{
 		this.window.args.confirm = '0';
-		this.window.args.step = 'step-2';
+		this.window.args.step = 'step-install-options';
 		this.window.args.installPercent = 0;
 	}
 
@@ -146,30 +240,35 @@ export class Drupal extends Task
 	{
 		await this.php;
 
-		navigator.locks.request("php-persist", async (lock) => {
-			let fileCount, filesInstalled = 0;
-			const installTracker = event => {
-				if(!fileCount)
-				{
-					fileCount = parseInt(event.detail);
-					return;
-				}
-				filesInstalled++;
-				const installPercent = 100 * filesInstalled / fileCount;
-				this.window.onTimeout(installPercent, () => {
-					this.window.args.installPercent = installPercent;
-					if(installPercent === 100)
-					{
-						this.window.args.step = 'step-3';
-					}
-				});
+		this.window.args.installPercent = 0;
 
-			};
-			this.php.addEventListener('output', installTracker);
-			this.php.run(require('./init.tmp.php')).then(() => {
-				this.php.removeEventListener('output', installTracker);
-				reloadPhp();
-			});
+		const download = await fetch(this.window.args.installZip);
+		const zipContents = await download.arrayBuffer();
+
+		navigator.locks.request("php-persist", async (lock) => {
+			this.window.args.step = 'step-waiting';
+
+			const settings = await this.sendMessage('getSettings');
+			const vHostPrefix = '/php-wasm/' + this.window.args.installPrefix;
+			const installPath = '/persist/' + this.window.args.installPath;
+			const existingvHost = settings.vHosts.find(vHost => vHost.pathPrefix === vHostPrefix);
+
+			if(!existingvHost)
+			{
+				settings.vHosts.push({
+					pathPrefix: vHostPrefix,
+					directory: '/persist/' + this.window.args.installvHostDir
+				});
+			}
+
+			await this.sendMessage('writeFile', ['/persist/restore.zip', new Uint8Array(zipContents)]);
+			await this.sendMessage('setSettings', [settings]);
+			await this.sendMessage('storeInit', []);
+
+			await this.sendMessage('writeFile', ['/config/restore-path.tmp', installPath])
+			.then(result => this.php.run(require('./init.tmp.php')))
+			.then(result => this.sendMessage('refresh', []))
+			.then(() => this.window.args.step = 'step-3');
 		});
 	}
 
@@ -203,13 +302,23 @@ export class Drupal extends Task
 
 	startServer()
 	{
-		Home.instance().run('cgi-worker', ['--start'])
+		Home.instance().run('cgi-worker', ['--start']);
 	}
 
 	openSite()
 	{
-		Home.instance().run('cgi-worker', ['--start'])
-		setTimeout(() => window.open('/php-wasm/drupal/'), 200);
+		Home.instance().run('cgi-worker', ['--start-quiet'])
+		setTimeout(() => window.open('/php-wasm/' + this.window.args.installPrefix), 200);
+	}
+
+	viewFiles()
+	{
+		Home.instance().run('repo-browser', [('persist/' + this.window.args.installPath)])
+	}
+
+	viewAllFiles()
+	{
+		Home.instance().run('repo-browser', [('persist')])
 	}
 
 	async backupSite()
@@ -236,7 +345,7 @@ export class Drupal extends Task
 				});
 			};
 			this.php.addEventListener('output', trackProgress);
-			this.php.run(require('./backup.tmp.php'))
+			await this.php.run(require('./backup.tmp.php'))
 			.then(() => this.sendMessage('refresh', []))
 			.then(() => this.sendMessage('readFile', ['/persist/backup.zip']))
 			.then(result => {
@@ -246,7 +355,9 @@ export class Drupal extends Task
 				link.href = URL.createObjectURL(blob);
 				link.click();
 				this.window.args.step = 'step-1';
-			}).catch(error => {
+			})
+			.then(() => this.sendMessage('unlink', ['/persist/backup.zip']))
+			.catch(error => {
 				console.log("ERR!");
 				console.error(error);
 				this.window.args.errorMessage = error.message;
@@ -269,7 +380,7 @@ export class Drupal extends Task
 		input.addEventListener('change', () => {
 			input.files[0].arrayBuffer().then(zipContents => {
 				navigator.locks.request("php-persist", async (lock) => {
-					this.window.args.step = 'step-3-running';
+					this.window.args.step = 'step-waiting';
 					this.sendMessage('writeFile', ['/persist/restore.zip', new Uint8Array(zipContents)])
 					.then(result => this.php.run(require('./restore.tmp.php')))
 					.then(result => this.sendMessage('refresh', []))
@@ -279,6 +390,17 @@ export class Drupal extends Task
 		});
 
 		input.click();
+	}
 
+	confirmOptions()
+	{
+		this.window.args.confirm = '0';
+		this.window.args.step = 'step-2';
+		this.window.args.installPercent = 0;
+	}
+
+	packageSelected(event)
+	{
+		this.window.args.selectedPackage = event.target.value;
 	}
 }

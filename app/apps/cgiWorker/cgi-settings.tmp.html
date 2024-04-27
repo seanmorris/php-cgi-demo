@@ -1,7 +1,6 @@
 <div class = "rows tall">
 
 	<div class = "rows">
-
 		<label class = "padded rows">
 			<div class = "left inset-flush">Document Root:</div>
 			<div class = "row stretch">
@@ -34,7 +33,31 @@
 			<small class = "left padded">How long to hold on to queued requests before discarding.</small>
 		</label>
 
+		<label class = "padded rows">
+			<div class = "left inset-flush">Virtual Hosts:</div>
+			<small class = "left inset-flush">Alternative docroots, mapped to url-path prefixes.</small>
+			<div class = "rows stretch" cv-each = "vHosts:vhost:i">
+				<div class = "row stretch">
+					<label class = "wide rows">
+						<span class = "left inset-flush">Url Path Prefix</span>
+						<input type = "text" class = "inset white stretch" cv-bind = "vhost.pathPrefix">
+					</label>
+					<label class = "wide rows">
+						<span class = "left inset-flush">Directory</span>
+						<input type = "text" class = "inset white stretch" cv-bind = "vhost.directory">
+					</label>
+					<label class = "rows">
+						<span class = "left inset-flush">&nbsp;</span>
+						<button class = "square">X</button>
+					</label>
+				</div>
+			</div>
+			<label class = "row right">
+				<button cv-on = "click:addvHost" class = "square">+</button>
+			</label>
+		</label>
 	</div>
+
 
 	<div class = "rows wide right lower">
 		<div class = "buttons padded">
@@ -42,4 +65,5 @@
 			<button cv-on = "click:save" class = "padded margin">Save</button>
 		</div>
 	</div>
+
 </div>

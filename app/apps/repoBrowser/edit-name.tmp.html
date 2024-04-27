@@ -1,0 +1,22 @@
+<div class = "rows frame ">
+	<span cv-if = "type" cv-is = "create" class = "row rows padded no-empty">
+		<div class = "left wide">Creating file in: </div>
+		<div class = "inset stretch">[[directory]]</div>
+	</span>
+	<span cv-if = "type" cv-is = "createDirectory" class = "row rows padded no-empty">
+		<div class = "left wide">Creating directory in: </div>
+		<div class = "inset stretch">[[directory]]</div>
+	</span>
+	<span cv-if = "type" cv-is = "rename" class = "row rows padded no-empty">
+		<div class = "left wide">Renaming file: </div>
+		<div class = "inset stretch">[[path]]</div>
+	</span>
+	<label class = "row rows padded">
+		<div class = "left wide">Name</div>
+		<input autofocus type = "text" cv-bind = "newName" class = "inset white stretch" />
+	</label>
+	<div class = "row margin right">
+		<button class = "margin" cv-on = "click:close();">cancel</button>
+		<button class = "margin" cv-on = "click:save();">ok</button>
+	</div>
+</div>

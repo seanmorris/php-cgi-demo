@@ -112,13 +112,16 @@ export class Home extends View
 		}
 	}
 
-	run(taskName, taskPath)
+	run(taskName, taskPath, quiet = false)
 	{
 		const taskPathString = taskPath
 			? '/' + taskPath.join('/')
 			: '';
 
-		Router.go('/' + taskName + taskPathString, 2);
+		if(!quiet)
+		{
+			Router.go('/' + taskName + taskPathString, 2);
+		}
 
 		const taskType = Home.path[taskName] || false;
 

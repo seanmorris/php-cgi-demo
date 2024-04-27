@@ -19,18 +19,18 @@ export class Folder extends View
 
 		this.args.files = [];
 
-		if(args.file && args.file.type === 'file')
+		if(!args.file || args.file.type === 'dir')
 		{
-			this.args.icon = '/w95/60-16-4bit.png';
-		}
-		else
-		{
-			this.args.icon = '/w95/4-16-4bit.png';
+			this.args.icon = this.args.iconClosed || '/w95/4-16-4bit.png';
 
 			if(this.args.expanded)
 			{
 				this.args.icon = '/w95/5-16-4bit.png';
 			}
+		}
+		else
+		{
+			this.args.icon = '/w95/60-16-4bit.png';
 		}
 
 		this.args.name = args.name || '.';
@@ -56,11 +56,13 @@ export class Folder extends View
 
 		if(this.args.pathOpen.substr(0, path.length) === path)
 		{
-			this.expand();
+			this.expand(null, null, this.parent)
+			.then(() => this.args.pathOpen = null);
 		}
 
 		if(this.args.pathOpen === path)
 		{
+			this.args.pathOpen = null;
 			this.select();
 		}
 	}
@@ -73,61 +75,81 @@ export class Folder extends View
 			event.stopPropagation();
 		}
 
-		this.tags.focus.element.focus();
+		if(this.args.browser.selected)
+		{
+			this.args.browser.selected.args.focused = '';
+		}
 
+		this.args.browser.selected = this;
+		this.args.browser.selected.args.focused = 'focus';
+
+		if(this.tags.focus && this.tags.focus.element)
+		{
+			this.tags.focus.element.focus();
+		}
+
+		this.args.browser.parentDir = this.parent;
+		this.args.browser.currentDir = this.parent;
 		this.args.browser.current = this;
 
-		this.populate(this.args.url).then((files)=>{
+		if(this.args.file && event)
+		{
+			Router.go(
+				`/${this.args.browser.cmd}`
+				// +`/${this.args.browser.username}`
+				// +`/${this.args.browser.reponame}`
+				+`/${this.args.file.path}`
+				, 2
+			);
+		}
+
+		if(!this.args.file || this.args.file.type !== 'dir')
+		{
+			return;
+		}
+
+		this.args.browser.currentDir = this;
+
+		this.populate(this.args.url).then((files) => {
 
 			if(!Array.isArray(files))
 			{
 				return;
 			}
 
-			if(this.args.file)
-			{
-				Router.go(
-					`/${this.args.browser.cmd}`
-					+`/${this.args.browser.username}`
-					+`/${this.args.browser.reponame}`
-					+`/${this.args.file.path}`
-					, 2
-				);
-			}
-
 			const iconList = new IconControl({}, this);
 
-			if(files)
-			{
-				const icons = files.map((file, key) => {
-					const name = file.name;
-					const action = () => {
+			const icons = files.map((file, key) => {
+				if(file.name === '.' || file.name === '..')
+				{
+					return;
+				}
+				const name = file.name;
+				const action = () => {
 
-						if(file.type === 'dir')
+					this.args.browser.parentDir = this;
+
+					if(file.type === 'dir')
+					{
+						if(this.files[name])
 						{
-							if(this.files[name])
-							{
-								this.files[name].expand(event, child, this, true);
-								this.files[name].select();
-								return;
-							}
+							this.files[name].expand(event, child, this, true);
+							this.files[name].select();
 						}
-						else if(file.download_url)
-						{
-							this.showControl(file, this);
-						}
+					}
+					else
+					{
+						this.showControl(file, this);
+						this.files[name].select();
+					}
+				};
 
-					};
+				const icon = new Icon({icon:file.type === 'dir' ? 4:60, name, action});
 
-					const icon = new Icon({icon:file.type === 'dir' ? 4:60, name, action});
+				iconList.args.icons.push(icon);
 
-					this.onTimeout(key * 16, () => {
-						iconList.args.icons.push(icon);
-					});
-
-					return icon;
-				});
-			}
+				return icon;
+			});
 
 			this.args.browser.window.args.filename = this.args.name;
 			this.args.browser.window.args.control  = iconList;
@@ -144,59 +166,75 @@ export class Folder extends View
 
 		this.args.browser.window.args.file = this.args.file;
 
-		this.expanding = new Promise((accept) => {
+		if(this.args.browser.selected)
+		{
+			this.args.browser.selected.args.focused = '';
+		}
 
-			console.log(this.args.file);
+		this.args.browser.selected = this;
+		this.args.browser.selected.args.focused = 'focus';
+
+		this.expanding = new Promise((accept, reject) => {
 
 			if(this.args.file && this.args.file.type === 'dir')
 			{
 				if(open === true)
 				{
 					this.args.expanded = true;
-					this.args.icon     = '/w95/5-16-4bit.png';
+					this.args.icon     = this.args.iconOpen || '/w95/5-16-4bit.png';
 				}
 				else if(open === false)
 				{
 					this.args.expanded = false;
-					this.args.icon     = '/w95/4-16-4bit.png';
+					this.args.icon     = this.args.iconClosed || '/w95/4-16-4bit.png';
 				}
 				else if(this.args.expanded)
 				{
-					this.args.icon = '/w95/4-16-4bit.png';
+					this.args.icon     = this.args.iconClosed || '/w95/4-16-4bit.png';
 					this.args.expanded = false;
 				}
 				else
 				{
-					this.args.icon     = '/w95/5-16-4bit.png';
+					this.args.icon     = this.args.iconOpen || '/w95/5-16-4bit.png';
 					this.args.expanded = true;
 				}
 			}
 
 			this.populate(this.args.url).then(() => {
-
 				if(event)
 				{
 					event.stopImmediatePropagation();
 					event.stopPropagation();
 				}
 
-				this.expanding = false
+				this.expanding = false;
 
-				if(this.args.file && this.args.file.type === 'file')
+				if(this.args.file && this.args.file.type !== 'dir')
 				{
 					this.showControl(this.args.file, dir);
 				}
 
 				accept();
+			}).catch(error => {
+				this.expanding = false;
+				this.args.browser.print('Error: ' + error.message);
+				reject(error);
 			});
 		});
+
+		return this.expanding;
 	}
 
 	showControl(file, dir)
 	{
-		const githubBackend = new GitHubBackend;
+		const backend = this.args.backend;
 
-		githubBackend.displayFile({file, dir, browser: this.args.browser});
+		this.args.browser.parentDir = this.parent;
+
+		backend.displayFile({file, dir, browser: this.args.browser})
+		.catch(error => this.args.browser.print(
+			`Error:  ${error.message} ${error.code} ${error.message}`
+		));
 	}
 
 	populate(url)
@@ -206,16 +244,22 @@ export class Folder extends View
 			return this.populating;
 		}
 
-		const githubBackend = new GitHubBackend;
-		console.log({url});
+		const backend = this.args.backend;
+		// console.log({url});
 		// const uri = '';
 
-		return this.populating = githubBackend.populate({
+		this.args.files = [];
+
+		this.populating = backend.populate({
 			uri: url
 			, folder: this
 			, pathOpen : this.args.pathOpen
 			, browser: this.args.browser
 		});
+
+		this.populating.finally(() => this.populating = null);
+
+		return this.populating
 	}
 }
 

@@ -58,6 +58,13 @@ export class Dialog extends Task
 			this.startService();
 		}
 
+		if(taskPath && taskPath.includes('--start-quiet'))
+		{
+			this.startService();
+
+			this.close();
+		}
+
 		if(taskPath && taskPath.includes('--open'))
 		{
 			window.open('/php-wasm/drupal', '_blank');
@@ -65,7 +72,10 @@ export class Dialog extends Task
 
 		if(serviceTracker.dialog)
 		{
-			serviceTracker.dialog.window.restore();
+			if(serviceTracker.dialog.window.classes.minimized)
+			{
+				serviceTracker.dialog.window.restore();
+			}
 			serviceTracker.dialog.window.focus();
 			this.quit();
 			return;
@@ -322,7 +332,9 @@ export class Dialog extends Task
 
 		await new Promise(accept => {
 			this.sendMessage('getSettings', [], result => {
+				console.log(result);
 				Object.assign(subArgs, result);
+				subArgs.vHosts = Object.assign([], subArgs.vHosts);
 				accept(result);
 			});
 		});
@@ -335,6 +347,7 @@ export class Dialog extends Task
 				, maxRequestAge: subArgs.maxRequestAge ?? this.maxRequestAge
 				, staticCacheTime: subArgs.staticCacheTime ?? this.staticCacheTime
 				, dynamicCacheTime: subArgs.dynamicCacheTime ?? this. dynamicCacheTime
+				, vHosts: Object.assign([], Bindable.shuck(subArgs.vHosts ?? this.vHosts))
 			}
 
 			this.sendMessage('setSettings', [settings], result => {
@@ -349,7 +362,17 @@ export class Dialog extends Task
 
 		subWindow.cancel = () => subWindow.close();
 
+		subWindow.addvHost = () => {
+			console.log(subArgs.vHosts);
+			subArgs.vHosts.push({});
+		}
+
 		subWindow.focus();
+	}
+
+	addvHost()
+	{
+		this.args.vHosts.push({pathPrefix:'', directory: ''});
 	}
 
 	about()

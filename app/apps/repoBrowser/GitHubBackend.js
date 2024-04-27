@@ -7,6 +7,7 @@ export class GitHubBackend
 {
 	populate({uri, folder, pathOpen, browser})
 	{
+		console.log({uri, folder, pathOpen, browser});
 		// const parsedUri = new URL(uri);
 		// const pathname  = parsedUri.pathname.substr(2);
 		// const url = `https://api.github.com/repos/${pathname}${parsedUri.search}`;
@@ -25,6 +26,7 @@ export class GitHubBackend
 		return fetch(url, {headers}).then(r => r.json()).then(files => {
 
 			const result = [];
+			console.trace(files);
 
 			if(Array.isArray(files))
 			{
@@ -54,6 +56,7 @@ export class GitHubBackend
 
 					const resource = new Resource({
 						browser
+						, backend: this
 						, url: file.url
 						, icon: img
 						, name
@@ -82,6 +85,8 @@ export class GitHubBackend
 
 	displayFile({file, dir, browser})
 	{
+		console.log({file, dir, browser});
+
 		const name = file.name;
 		const type = name.split('.').pop();
 
@@ -134,6 +139,8 @@ export class GitHubBackend
 				browser.parent               = dir;
 			});
 		}
+
+		return Promise.resolve();
 	}
 
 	loadFile({uri, browser, filepath})
@@ -196,8 +203,68 @@ export class GitHubBackend
 		});
 	}
 
-	saveFile()
+	saveFile({browser})
 	{
+		const raw = browser.window.args.plain.args.content;
 
+		const branch  = 'master';
+		const message = 'Nynex self-edit.';
+		const content = btoa(unescape(encodeURIComponent(raw)));
+		const sha     = browser.window.args.sha;
+
+		// const url = new URL(this.window.args.url).pathname;
+
+		const postChange  = {message, content, sha};
+
+		const headers = {
+			'Content-Type': 'application/json'
+			, Accept:       'application/vnd.github.v3.json'
+		};
+
+		const gitHubToken = GitHub.getToken();
+
+		let loginPromise = Promise.resolve();
+
+		if(gitHubToken && gitHubToken.access_token)
+		{
+			headers.Authorization = `token ${gitHubToken.access_token}`;
+		}
+		else
+		{
+			loginPromise = home.run('github').thread
+
+			loginPromise.then(result=>{
+				browser.window.args.repoIcons = [];
+				browser.loadRepos();
+			});
+		}
+
+		loginPromise.then(()=>{
+			const gitHubToken = GitHub.getToken();
+			const method = 'PUT';
+			const body   = JSON.stringify(postChange);
+			const mode   = 'cors';
+
+			const credentials = 'omit';
+
+			if(gitHubToken && gitHubToken.access_token)
+			{
+				headers.Authorization = `token ${gitHubToken.access_token}`;
+			}
+			else
+			{
+				return;
+			}
+
+			return fetch(
+				browser.window.args.repoUrl
+					+ '/contents/'
+					+ browser.window.args.filepath
+				, {method, headers, body, mode}
+			).then(response => response.json()
+			).then(json => {
+				browser.window.args.sha = json.content.sha;
+			});
+		});
 	}
 }

@@ -1,34 +1,39 @@
 <section class = "step-3 rows" cv-if = "step" cv-is = "step-3">
 	<div class = "rows padded">
-		<label>
+		<div class = "row start padded">
 			<button class = "start-server tight" cv-on = "click:startServer"></button>
 			<div class = "rows">
 				<span>Start the Server</span>
 				<small>Spin up the CGI Service Worker.</small>
 			</div>
-		</label>
-	</div>
-	<div class = "rows padded">
-		<label>
+		</div>
+		<hr />
+		<div class = "row start padded">
 			<button class = "open-site tight" cv-on = "click:openSite"></button>
 			<div class = "rows">
 				<span>Open Site</span>
 				<small>Spin up the CGI Service Worker & open the site in a new tab.</small>
 			</div>
-		</label>
-	</div>
-	<div class = "rows padded">
-		<label>
+		</div>
+		<hr />
+		<div class = "row start padded">
+			<button class = "view-files tight" cv-on = "click:viewFiles"></button>
+			<div class = "rows">
+				<span>View Files</span>
+				<small>View & edit the PHP source files of the package.</small>
+			</div>
+		</div>
+
+		<!-- <hr />
+		<div class = "row start padded">
 			<button class = "exit tight" cv-on = "click:close"></button>
 			<div class = "rows">
 				<span>Exit</span>
 				<small>Close the installer.</small>
 			</div>
-		</label>
+		</div> -->
 	</div>
-	<div class = "rows liquid">
-
-	</div>
+	<div class = "rows liquid"></div>
 	<div class = "row right padded button-row">
 		<button class = "padded" cv-on = "click:backToMenu">back</button>
 	</div>
@@ -36,35 +41,31 @@
 
 <section class = "step-3 rows" cv-if = "step" cv-is = "step-3-clear">
 	<div class = "rows padded">
-		<label>
+		<div class = "row start padded">
 			<button class = "start-server tight" cv-on = "click:startServer"></button>
 			<div class = "rows">
 				<span>Start the Server</span>
 				<small>Spin up the CGI Service Worker.</small>
 			</div>
-		</label>
-	</div>
-	<div class = "rows padded">
-		<label>
+		</div>
+		<hr />
+		<div class = "row start padded">
 			<button class = "start-server tight" cv-on = "click:openSite"></button>
 			<div class = "rows">
 				<span>Open Site</span>
 				<small>Spin up the CGI Service Worker & open the site in a new tab.</small>
 			</div>
-		</label>
-	</div>
-	<div class = "rows padded">
-		<label>
+		</div>
+		<!-- <hr />
+		<div>
 			<button class = "exit tight" cv-on = "click:close"></button>
 			<div class = "rows">
 				<span>Exit</span>
 				<small>Close the installer.</small>
 			</div>
-		</label>
+		</div> -->
 	</div>
-	<div class = "rows liquid">
-
-	</div>
+	<div class = "rows liquid"></div>
 	<div class = "row right padded button-row">
 		<button class = "padded" cv-on = "click:backToMenu">back</button>
 	</div>

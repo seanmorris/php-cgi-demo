@@ -1,43 +1,41 @@
 <section class = "step-1 rows" cv-if = "step" cv-is = "step-1">
 	<div class = "rows padded">
-		<label>
+		<div class = "row start padded">
 			<button class = "install tight" cv-on = "click:initFilesystem"></button>
 			<div class = "rows">
-				<span>Install Drupal</span>
-				<small>Clear any existing install and restore it to the inital state.</small>
-				<small>Username: admin</small>
-				<small>Password: admin</small>
+				<span>Install Software</span>
+				<small>Install a package & restore it to the inital state.</small>
 			</div>
-		</label>
-	</div>
-
-	<div class = "rows padded">
-		<label>
+		</div>
+		<div class = "row start padded">
 			<button class = "uninstall tight" cv-on = "click:clearFilesystem"></button>
 			<div class = "rows">
-				<span>Uninstall Drupal</span>
+				<span>Clear All Files</span>
 				<small>Clear the filesystem.</small>
 			</div>
-		</label>
-	</div>
-
-	<div class = "rows padded">
-		<label>
+		</div>
+		<hr />
+		<div class = "row start padded">
 			<button class = "backup tight" cv-on = "click:backupSite"></button>
 			<div class = "rows">
 				<span>Backup Site</span>
 				<small>Download your site as a zip file.</small>
 			</div>
-		</label>
-	</div>
-
-	<div class = "rows padded">
-		<label>
+		</div>
+		<div class = "row start padded">
 			<button class = "restore tight" cv-on = "click:restoreSite"></button>
 			<div class = "rows">
 				<span>Restore Site</span>
 				<small>Upload a zipped backup file.</small>
 			</div>
-		</label>
+		</div>
+		<hr />
+		<div class = "row start padded">
+			<button class = "view-files tight" cv-on = "click:viewAllFiles"></button>
+			<div class = "rows">
+				<span>View Files</span>
+				<small>View & edit the files in the service worker's filesystem.</small>
+			</div>
+		</div>
 	</div>
 </section>

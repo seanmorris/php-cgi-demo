@@ -47,12 +47,12 @@ export class Desktop extends View
 			// 	, path: 'w98'
 			// 	, bits: 8
 			// })
-			// , new Icon({
-			// 	action: 'repo-browser'
-			// 	, name: 'Repo Browser'
-			// 	, icon: 73
-			// 	// , path: 'w98'
-			// })
+			new Icon({
+				action: 'repo-browser'
+				, name: 'Omni Explorer'
+				, icon: 73
+				// , path: 'w98'
+			})
 			// , new Icon({
 			// 	action: 'nynepad'
 			// 	, name: 'Nynepad'
@@ -136,7 +136,7 @@ export class Desktop extends View
 			})
 			, new Icon({
 				action: 'drupal'
-				, name: 'Drupal 7'
+				, name: 'PHP Package Installer'
 				, icon: 'drupal'
 				, path: 'apps'
 				, bits: 24
