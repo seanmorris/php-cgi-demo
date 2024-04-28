@@ -69,6 +69,7 @@ export class RepoBrowser extends Task
 		this.window.deleteFile = event => this.deleteFile(event);
 		this.window.downloadFile = event => this.downloadFile(event);
 		this.window.uploadFile = event => this.uploadFile(event);
+		this.window.help = event => this.help(event);
 
 		this.window.viewControl = (type) => {
 			this.window.args.viewRaw = `view-control-${type}`;
@@ -353,6 +354,20 @@ export class RepoBrowser extends Task
 		this.window.args.repoIcons = [];
 	}
 
+	help()
+	{
+		const subArgs = {
+			template: require('./help.tmp')
+			, title:  'Help'
+			, width:   '640px'
+			, height:  '500px'
+		};
+
+		const subWindow = this.openSubWindow(subArgs);
+
+		subWindow.focus();
+	}
+
 	upDirectory(event)
 	{
 		if(!this.parentDir || !(this.parentDir instanceof Folder))
@@ -392,7 +407,10 @@ export class RepoBrowser extends Task
 
 	newFile()
 	{
-		console.log(this.currentDir);
+		if(!this.currentDir)
+		{
+			return;
+		}
 
 		const subArgs = {
 			template:    require('./edit-name.tmp.html')
@@ -421,7 +439,10 @@ export class RepoBrowser extends Task
 
 	newDirectory()
 	{
-		console.log(this.currentDir);
+		if(!this.currentDir)
+		{
+			return;
+		}
 
 		const subArgs = {
 			template:    require('./edit-name.tmp.html')
@@ -519,14 +540,6 @@ export class RepoBrowser extends Task
 	}
 
 	uploadFile()
-	{
-
-	}
-
-	loadFile(filepath)
-	{}
-
-	saveFile(event)
 	{}
 
 	loadRepos(page = 0)

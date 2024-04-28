@@ -17,11 +17,6 @@
 		</div>
 	</div>
 
-	<div class = "rows padded">
-		<div class = "row">
-			<progress class = "inset" value="[[installPercent]]" max="100" />
-		</div>
-	</div>
 
 	<div class = "row right padded button-row">
 		<button class = "padded" cv-on = "click:backToMenu">back</button>
@@ -31,18 +26,20 @@
 
 <section class = "step-2 rows" cv-if = "step" cv-is = "step-2-clear">
 	<div class = "rows padded wide">
-		<h2>Uninstall Drupal</h2>
-		<div class = "row">
-			<img src = "/w98/msg_warning-32-4bit.png">&nbsp;
-			<span>This will clear the database & all files!</span>
-		</div>
-		<div class = "rows padded">
-			<label>
-				<input type = "radio" cv-bind = "confirm" value = "1">Yes
-			</label>
-			<label>
-				<input type = "radio" cv-bind = "confirm" value = "0">No
-			</label>
+		<h2>Clear Filesystem</h2>
+		<div class = "inset">
+			<div class = "row padded">
+				<img src = "/w98/msg_warning-32-4bit.png">&nbsp;
+				<span>This will clear the database & all files!</span>
+			</div>
+			<div class = "rows padded">
+				<label>
+					<input type = "radio" cv-bind = "confirm" value = "1">Yes
+				</label>
+				<label>
+					<input type = "radio" cv-bind = "confirm" value = "0">No
+				</label>
+			</div>
 		</div>
 	</div>
 
@@ -57,7 +54,7 @@
 
 <section class = "step-2 rows" cv-if = "step" cv-is = "step-2-restore">
 	<div class = "rows padded wide">
-		<h2>Restore Drupal</h2>
+		<h2>Restore Filesystem</h2>
 		<div class = "row">
 			<img src = "/w98/msg_warning-32-4bit.png">&nbsp;
 			<span>This will overwrite the database & all files!</span>
@@ -83,7 +80,7 @@
 
 <section class = "step-2 rows" cv-if = "step" cv-is = "step-2-backup">
 	<div class = "rows liquid padded wide">
-		<h2>Backing up Drupal...</h2>
+		<h2>Backing up Filesystem...</h2>
 		<div class = "row" cv-if = "errorMessage">
 			<img src = "/w98/msg_error-32-4bit.png">&nbsp;
 			<span>[[errorMessage]]</span>

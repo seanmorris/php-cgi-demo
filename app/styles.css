@@ -273,6 +273,9 @@ button {
 	min-width: 24px;
 	height: 28px;
 	padding: 2px 4px 2px 4px;
+	/* margin-right: -1px; */
+	/* border-right: 0px;
+	 */
 	align-items: center;
 	flex-direction: row;
 }
@@ -452,6 +455,10 @@ label.icon-frame label {
 
 .block {
 	display: block;
+}
+
+.inline {
+	display: inline-block !important;
 }
 
 .repo-browser textarea.main-content {

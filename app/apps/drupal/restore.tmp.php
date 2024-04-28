@@ -15,10 +15,16 @@ $zip = new ZipArchive;
 
 if($zip->open('/persist/restore.zip', ZipArchive::RDONLY) === TRUE)
 {
-	$zip->extractTo('/');
+	$total = $zip->count();
+
+	for($i = 0; $i < $total; $i++)
+	{
+		$zip->extractTo('/', $zip->getNameIndex($i));
+		print(1+$i / $total);
+	}
 }
 
-var_dump($zip->close());
+$zip->close();
 
 unlink('/persist/restore.zip');
 

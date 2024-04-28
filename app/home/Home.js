@@ -86,7 +86,7 @@ export class Home extends View
 
 			, '*': (args) => {
 
-				const taskName = args.pathparts.shift() || 'repo-browser';
+				const taskName = args.pathparts.shift() || 'omni-explorer';
 				const taskPath = args.pathparts.slice() || '/seanmorris/nynex95/package.json';
 
 				if(taskName)

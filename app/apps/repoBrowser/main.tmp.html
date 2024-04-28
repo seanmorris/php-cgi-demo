@@ -1,63 +1,6 @@
 <hr />
 <div class = "row tight">
-	<button class = "square" title = "Github">
-		<img class = "icon16" src = "/apps/github-16-2bit.png" />
-	</button>
 
-	<button class = "square" title = "toggle left bar" cv-on = "click:toggleSection('left')">
-		<img data-section-antileft class = "icon16" src = "/ui/left-sidebar-expand.png" />
-		<img data-section-left class = "icon16" src = "/ui/left-sidebar-collapse.png" />
-	</button>
-
-	<!-- <button class = "square" title = "toggle right bar" cv-on = "click:toggleSection('right')">
-		<img data-section-antiright class = "icon16" src = "/ui/right-sidebar-expand.png" />
-		<img data-section-right class = "icon16" src = "/ui/right-sidebar-collapse.png" />
-	</button> -->
-
-	<button class = "square" title = "toggle terminal" cv-on = "click:toggleSection('term')">
-		<img class = "icon16" src = "/w98/console_prompt-16-4bit.png" />
-	</button>
-
-	<button class = "square"  title = "help">
-		<img class = "icon16" src = "/w98/help_book_small-16-4bit.png" />
-	</button>
-
-	<div class = "row tight wide right">
-		<div class = "row wide">
-		</div>
-
-		<div class = "inset wide row lower tight outer white" tabindex = "-1">
-
-			<button class = "flat tight white" class = "tight">
-				<img src = "/w98/network_drive-16-4bit.png" />
-			</button>
-
-			<input
-				class = "inset wide flat tight white"
-				value = "FS: [[repoName]] [ [[branch]] ]"
-				readonly = "true"
-			/>
-
-			<button class = "dropdown tight"  title = "help">
-				<img src = "/ui/dropdown-arrow.png" />
-			</button>
-
-			<div class = "pane repos-dropdown">
-				<div cv-if = "!repos" class = "tight row">
-					<label class = "pane wide">Log into github to view your repos.</label>
-					<button data-tint = "red" cv-on = "click:githubLogin(event)">
-						Go
-					</button>
-				</div>
-				<div class = "scroll inset white" data-role = "icon-list" cv-each = "repoIcons:icon:i">
-					[[icon]]
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
-
-<div class = "row tight">
 	<button class = "square" title = "new file" cv-on = "click:newFile">
 		<img src = "/ui/new.png" />
 	</button>
@@ -93,6 +36,65 @@
 	<button  cv-on = "click:uploadFile(event)" class = "square" title = "upload file">
 		<img class = "icon16" src = "/w98/system_restore-16-8bit.png" />
 	</button>
+
+	<div class = "row tight wide right">
+		<div class = "row wide">
+		</div>
+
+		<!-- <button class = "square" title = "Github">
+			<img class = "icon16" src = "/apps/github-16-2bit.png" />
+		</button> -->
+
+		<button class = "square" title = "toggle left bar" cv-on = "click:toggleSection('left')">
+			<img data-section-antileft class = "icon16" src = "/ui/left-sidebar-expand.png" />
+			<img data-section-left class = "icon16" src = "/ui/left-sidebar-collapse.png" />
+		</button>
+
+		<!-- <button class = "square" title = "toggle right bar" cv-on = "click:toggleSection('right')">
+			<img data-section-antiright class = "icon16" src = "/ui/right-sidebar-expand.png" />
+			<img data-section-right class = "icon16" src = "/ui/right-sidebar-collapse.png" />
+		</button> -->
+
+		<button class = "square" title = "toggle terminal" cv-on = "click:toggleSection('term')">
+			<img class = "icon16" src = "/w98/console_prompt-16-4bit.png" />
+		</button>
+
+		<button cv-on = "click:help(event)" class = "square"  title = "help">
+			<img class = "icon16" src = "/w98/help_book_small-16-4bit.png" />
+		</button>
+
+		<!-- <div class = "inset wide row lower tight outer white" tabindex = "-1">
+			<button class = "flat tight white" class = "tight">
+				<img src = "/w98/network_drive-16-4bit.png" />
+			</button>
+
+			<input
+				class = "inset wide flat tight white"
+				value = "FS: [[repoName]] [ [[branch]] ]"
+				readonly = "true"
+			/>
+
+			<button class = "dropdown tight"  title = "help">
+				<img src = "/ui/dropdown-arrow.png" />
+			</button>
+
+			<div class = "pane repos-dropdown">
+				<div cv-if = "!repos" class = "tight row">
+					<label class = "pane wide">Log into github to view your repos.</label>
+					<button data-tint = "red" cv-on = "click:githubLogin(event)">
+						Go
+					</button>
+				</div>
+				<div class = "scroll inset white" data-role = "icon-list" cv-each = "repoIcons:icon:i">
+					[[icon]]
+				</div>
+			</div>
+		</div> -->
+	</div>
+</div>
+
+<div class = "row tight">
+
 </div>
 
 <hr />
@@ -136,8 +138,8 @@
 			<div class = "cols wide">
 				<div class = "row inset lower wide white nowrap">
 
-					<button cv-on = "click:selectParent(event);" class = "flat tight white">
-						<img src = "/ui/dir-up.png" cv-on = "click:upDirectory" />
+					<button cv-on = "click:upDirectory" class = "flat tight white">
+						<img src = "/ui/dir-up.png" />
 					</button>
 
 					File: [[filename]]

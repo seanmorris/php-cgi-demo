@@ -59,15 +59,16 @@ export class PhpCgi
 	input      = [];
 	output     = [];
 	error      = [];
-	cookies    = new Map;
+	cookies    = null;
 	count      = 0;
 
-	constructor({docroot, prefix, rewrite, cookies, ...args} = {})
+	constructor({docroot, prefix, rewrite, cookies, types, ...args} = {})
 	{
 		this.docroot = docroot || '';
-		this.cookies = cookies || '';
-		this.prefix  = prefix  || 'php-wasm';
+		this.prefix  = prefix  || '/php-wasm';
 		this.rewrite = rewrite || this.rewrite;
+		this.cookies = cookies || new Map;
+		this.types   = types   || {};
 		this.phpArgs = args;
 
 		this.maxRequestAge    = args.maxRequestAge || 0;
@@ -88,7 +89,7 @@ export class PhpCgi
 			stdin: () =>  this.input
 				? String(this.input.shift()).charCodeAt(0)
 				: null
-			, stdout: x => this.output.push(String.fromCharCode(x))
+			, stdout: x => this.output.push(x)
 			, persist: [{mountPath:'/persist'}, {mountPath:'/config'}]
 			, ...this.phpArgs
 		});
@@ -119,19 +120,20 @@ export class PhpCgi
 		} = await breakoutRequest(request);
 
 		let docroot = this.docroot;
+		let vHostEntrypoint, vHostPrefix;
 
-		for(const {pathPrefix, directory} of this.vHosts)
+		for(const {pathPrefix, directory, entrypoint} of this.vHosts)
 		{
 			if(pathPrefix === url.pathname.substr(0, pathPrefix.length))
 			{
 				docroot = directory;
+				vHostEntrypoint = entrypoint;
+				vHostPrefix = pathPrefix;
 				break;
 			}
 		}
 
 		const rewrite = this.rewrite(url.pathname);
-
-		console.log(rewrite);
 
 		let scriptName, path;
 
@@ -142,7 +144,14 @@ export class PhpCgi
 		}
 		else
 		{
-			scriptName = path = docroot + path;
+
+			path = docroot + rewrite.substr((vHostPrefix || this.prefix).length);
+			scriptName = path;
+		}
+
+		if(vHostEntrypoint)
+		{
+			scriptName = vHostPrefix + '/' + vHostEntrypoint;
 		}
 
 		const cache  = await caches.open('static-v1');
@@ -166,7 +175,9 @@ export class PhpCgi
 
 			let originalPath = url.pathname;
 
-			if(path.substr(-4) !== '.php')
+			const extension = path.split('.').pop();
+
+			if(extension !== 'php')
 			{
 				const aboutPath = php.FS.analyzePath(path);
 
@@ -175,6 +186,10 @@ export class PhpCgi
 				{
 					const response = new Response(php.FS.readFile(path, { encoding: 'binary', url }), {});
 					response.headers.append('x-php-wasm-cache-time', new Date().getTime());
+					if(extension in this.types)
+					{
+						response.headers.append('Content-type', this.types[extension]);
+					}
 					cache.put(url, response.clone());
 					accept(response);
 					return;
@@ -208,8 +223,6 @@ export class PhpCgi
 				putEnv(php, 'HTTP_HOST', selfUrl.host);
 				putEnv(php, 'REQUEST_SCHEME', selfUrl.protocol.substr(0, selfUrl.protocol.length - 0));
 
-				console.log({docroot, originalPath, scriptName, path});
-
 				putEnv(php, 'DOCUMENT_ROOT', docroot);
 				putEnv(php, 'REQUEST_URI', originalPath);
 				putEnv(php, 'SCRIPT_NAME', scriptName);
@@ -222,11 +235,13 @@ export class PhpCgi
 				putEnv(php, 'CONTENT_TYPE', contentType);
 				putEnv(php, 'CONTENT_LENGTH', String(this.input.length));
 
+				console.log(this.cookies);
+				console.log([...this.cookies.entries()].map(e => `${e[0]}=${e[1]}`).join('; '));
+
 				try
 				{
 					if(php._main() === 0) // PHP exited with code 0
 					{
-						console.warn('Done');
 						await new Promise((accept,reject) => php.FS.syncfs(false, err => {
 							if(err) reject(err);
 							else    accept();
@@ -242,7 +257,7 @@ export class PhpCgi
 
 				++this.count;
 
-				const parsedResponse = parseResponse(this.output.join(''));
+				const parsedResponse = parseResponse(this.output);
 
 				let status = 200;
 
@@ -260,12 +275,15 @@ export class PhpCgi
 					const semi  = raw.indexOf(';');
 					const equal = raw.indexOf('=');
 					const key   = raw.substr(0, equal);
-					const value = raw.substr(1 + equal, semi - equal);
+					const value = raw.substr(1 + equal, -1 + semi - equal);
 
-					this.cookies.set(key, value);
+					this.cookies.set(key, value,);
+					console.log({raw, key, value});
 				}
 
-				const headers = { "Content-Type": parsedResponse.headers["Content-Type"] };
+				const headers = {
+					'Content-Type': parsedResponse.headers["Content-Type"] ?? 'text/html; charset=utf-8'
+				};
 
 				if(parsedResponse.headers.Location)
 				{

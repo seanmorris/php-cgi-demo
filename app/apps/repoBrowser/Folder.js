@@ -154,6 +154,8 @@ export class Folder extends View
 			this.args.browser.window.args.filename = this.args.name;
 			this.args.browser.window.args.control  = iconList;
 			this.args.browser.window.args.viewRaw  = 'view-control-rendered';
+
+			console.log(iconList);
 		});
 	}
 

@@ -58,19 +58,18 @@ export class Dialog extends Task
 			this.startService();
 		}
 
+		if(taskPath && taskPath.includes('--open'))
+		{
+			window.open('/php-wasm/drupal', '_blank');
+		}
+
 		if(taskPath && taskPath.includes('--start-quiet'))
 		{
 			this.startService();
 
 			this.close();
 		}
-
-		if(taskPath && taskPath.includes('--open'))
-		{
-			window.open('/php-wasm/drupal', '_blank');
-		}
-
-		if(serviceTracker.dialog)
+		else if(serviceTracker.dialog)
 		{
 			if(serviceTracker.dialog.window.classes.minimized)
 			{

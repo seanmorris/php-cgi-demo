@@ -1,5 +1,20 @@
 <section class = "step-waiting rows" cv-if = "step" cv-is = "step-waiting">
 	<div class = "rows liquid padded wide">
-		<h2>Installing Package...</h2>
+		<div class = "rows liquid padded wide">
+
+			<h2>Installing Package...</h2>
+
+			<div class = "row" cv-if = "errorMessage">
+				<img src = "/w98/msg_error-32-4bit.png">&nbsp;
+				<span>[[errorMessage]]</span>
+			</div>
+
+			<div class = "rows">
+				<div class = "row">
+					<progress class = "inset" value="[[installPercent]]" max="100" />
+				</div>
+			</div>
+
+		</div>
 	</div>
 </section>

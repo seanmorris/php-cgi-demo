@@ -18,8 +18,12 @@ $zip = new ZipArchive;
 
 if($zip->open('/persist/restore.zip', ZipArchive::RDONLY) === TRUE)
 {
-	print $zip->count();
-	$zip->extractTo($docroot);
+	$total = $zip->count();
+	for($i = 0; $i < $total; $i++)
+	{
+		$zip->extractTo($docroot, $zip->getNameIndex($i));
+		print ((1+$i) / $total) . PHP_EOL;
+	}
 }
 
 unlink('/persist/restore.zip');

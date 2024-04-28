@@ -1,0 +1,97 @@
+<div class = "rows frame">
+	<h1 class = "padded">Omni Explorer Help</h1>
+	<div class = "inset liquid">
+		<div class = "scroll margin white wide rows">
+			<h2>What's this?</h2>
+			<p>Omni Explorer allows you to browse & modify the files available to php-wasm.</p>
+
+			<h2>Directory Types</h2>
+
+			<ul>
+				<li><img src = "/w95/5-16-4bit.png"> This is a normal directory within the filesystem.</li>
+				<li><img src = "/w95/9-16-4bit.png"> This representes a <b>mounted</b> directory.</li>
+			</ul>
+
+			<p>Top level directories like <i>/tmp</i> or <i>/home</i> are regenerated each time php-wasm is re-instantiated. Since php-cgi-wasm runs in the service worker, this won't be on ever page refresh but its important to remember that these folders cannot store anything persistently.</p>
+
+			<p><b>Mounted</b> directories that are backed by persistent IDBFS volumes are marked with a <img src = "/w95/9-16-4bit.png"> icon. These directories will contain PHP source code and configuration files, so they can be stored and  modified without fear of losing them.</p>
+
+			<h2>Buttons</h2>
+			<p>
+				<button class = "square inline" title = "new file">
+					<img src = "/ui/new.png" />
+				</button>
+				Create a new file in the directory selected in the left bar.
+			</p>
+
+			<p>
+				<button class = "square inline" title = "new folder">
+					<img src = "/w98/directory_favorites-16-8bit.png" />
+				</button>
+				Create a new directory in the directory selected in the left bar.
+			</p>
+
+			<p>
+				<button class = "square inline" title = "save file">
+					<img src = "/ui/save.png" />
+				</button>
+				Save the open file.
+			</p>
+
+			<p>
+				<button class = "square inline" title = "rename file">
+					<img class = "icon16" src = "/w98/signature-16-4bit.png" />
+				</button>
+				Rename the file selected in the left bar.
+			</p>
+
+			<p>
+				<button class = "square inline" title = "delete">
+					<img class = "icon16" src = "/ui/delete.png" />
+				</button>
+				Delete the file selected in the left bar.
+			</p>
+
+			<p>
+				<button class = "square inline" title = "refresh">
+					<img class = "icon16" src = "/arrow-circle.png" />
+				</button>
+				Refresh the directory.
+			</p>
+
+			<p>
+				<button class = "square inline"  title = "download file">
+					<img class = "icon16" src = "/w98/download-16-4bit.png" />
+				</button>
+				Download the selected file.
+			</p>
+
+			<p>
+				<button class = "square inline" title = "upload file">
+					<img class = "icon16" src = "/w98/system_restore-16-8bit.png" />
+				</button>
+				Upload a file into the directory selected in the left bar.
+			</p>
+
+
+			<p>
+				<button class = "square inline" title = "toggle left bar">
+					<img data-section-left class = "icon16" src = "/ui/left-sidebar-collapse.png" />
+				</button>
+				Show/hide the left bar.
+			<p>
+				<button class = "square inline" title = "toggle terminal">
+					<img class = "icon16" src = "/w98/console_prompt-16-4bit.png" />
+				</button>
+				Show/hide the console.
+			</p>
+
+			<p>
+				<button class = "square inline"  title = "help">
+					<img class = "icon16" src = "/w98/help_book_small-16-4bit.png" />
+				</button>
+				Open this help window.
+			</p>
+		</div>
+	</div>
+</div>

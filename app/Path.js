@@ -32,6 +32,7 @@ export const Path = {
 	, 'nynepad':      Nynepad
 	// , 'nynemark':     Nynemark
 	, 'repo-browser': RepoBrowser
+	, 'omni-explorer':RepoBrowser
 	, 'window':       Task
 	, 'php':          PhpEditor
 	, 'cgi-worker':   Dialog
@@ -40,6 +41,7 @@ export const Path = {
 	, 'clippy':       Clippy
 	, 'console':      Console
 	, 'drupal':       Drupal
+	, 'installer':    Drupal
 	, 'widgets':      WidgetViewer
 	, 'clones':       ClonesNBarrels
 	, 'numb':         Numb

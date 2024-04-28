@@ -22,7 +22,6 @@ if($zip->open('/persist/backup.zip', ZipArchive::CREATE) === TRUE)
 
 		$files[] = $name;
 	}
-}
 
 	foreach ($itB as $name => $entry)
 	{
@@ -30,16 +29,16 @@ if($zip->open('/persist/backup.zip', ZipArchive::CREATE) === TRUE)
 
 		$files[] = $name;
 	}
+}
 
-print count($files) . PHP_EOL;
-
+$i = 0;
 foreach($files as $name)
 {
 	$zip->addFile($name);
-	var_dump($name);
+	print (++$i / count($files)) . PHP_EOL;
 }
 
-var_dump($zip->close());
+$zip->close();
 
 exit;
 

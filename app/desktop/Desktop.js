@@ -47,12 +47,6 @@ export class Desktop extends View
 			// 	, path: 'w98'
 			// 	, bits: 8
 			// })
-			new Icon({
-				action: 'repo-browser'
-				, name: 'Omni Explorer'
-				, icon: 73
-				// , path: 'w98'
-			})
 			// , new Icon({
 			// 	action: 'nynepad'
 			// 	, name: 'Nynepad'
@@ -120,12 +114,18 @@ export class Desktop extends View
 			// 	, path: 'apps'
 			// 	, bits: 1
 			// })
-			, new Icon({
-				action: 'php'
-				, name: 'Run PHP'
-				, icon: 'php'
+			new Icon({
+				action: 'installer'
+				, name: 'PHP Package Installer'
+				, icon: 'drupal'
 				, path: 'apps'
 				, bits: 24
+			})
+			, new Icon({
+				action: 'omni-explorer'
+				, name: 'Omni Explorer'
+				, icon: 73
+				// , path: 'w98'
 			})
 			, new Icon({
 				action: 'cgi-worker'
@@ -134,16 +134,18 @@ export class Desktop extends View
 				, path: 'apps'
 				, bits: 24
 			})
-			, new Icon({
-				action: 'drupal'
-				, name: 'PHP Package Installer'
-				, icon: 'drupal'
-				, path: 'apps'
-				, bits: 24
-			})
+
+
 		];
 
 		this.args.endIcons = [
+			new Icon({
+				action: 'php'
+				, name: 'Run PHP'
+				, icon: 'php'
+				, path: 'apps'
+				, bits: 24
+			})
 			// new Icon({
 			// 	action: 'nynex-help'
 			// 	, name: 'What\'s Nynex?'

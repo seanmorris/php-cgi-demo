@@ -1,24 +1,16 @@
 import { PhpCgi } from "./PhpCgi";
 
-const cookies = new Map;
-const php = new PhpCgi({ cookies, prefix: '/php-wasm', docroot: '/persist/www', rewrite: path => {
-	const _path = path.split('/');
-
-	if(_path[0] === '')
-	{
-		_path.shift();
+const php = new PhpCgi({
+	prefix: '/php-wasm'
+	, docroot: '/persist/www'
+	, types: {
+		jpeg: 'image/jpeg'
+		, jpg: 'image/jpeg'
+		, gif: 'image/gif'
+		, png: 'image/png'
+		, svg: 'image/svg+xml'
 	}
-
-	if(_path[0] === 'php-wasm' && _path[1])
-	{
-		_path.shift();
-		let vhostPrefix = _path.shift();
-
-		return {path: '/' + _path.join('/'), scriptName: php.prefix + '/' + vhostPrefix + '/index.php'};
-	}
-
-	return '/' + _path.join('/');
-} });
+});
 
 self.addEventListener('install', event => {
 	console.log('Install');

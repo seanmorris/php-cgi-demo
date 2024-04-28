@@ -27,6 +27,7 @@ const packages = {
 		path:  'drupal-7.95',
 		vHost: 'drupal',
 		dir:   'drupal-7.95',
+		entry: 'index.php',
 	},
 	// 'drupal-8': {
 	// 	name:  'Drupal 8',
@@ -42,19 +43,20 @@ const packages = {
 	// 	vHost: 'codeigniter-3',
 	// 	dir:   'codeigniter-3',
 	// },
-	'codeigniter-4': {
-		name:  'CodeIgniter 4',
-		file:  '/backups/codeigniter-4.zip',
-		path:  'codeigniter-4',
-		vHost: 'codeigniter-4',
-		dir:   'codeigniter-4/public',
-	},
+	// 'codeigniter-4': {
+	// 	name:  'CodeIgniter 4',
+	// 	file:  '/backups/codeigniter-4.zip',
+	// 	path:  'codeigniter-4',
+	// 	vHost: 'codeigniter-4',
+	// 	dir:   'codeigniter-4/public',
+	// 	entry: 'index.php',
+	// },
 	// 'cakephp-5': {
 	// 	name:  'CakePHP 5',
 	// 	file:  '/backups/cakephp-5.zip',
 	// 	path:  'cakephp-5',
 	// 	vHost: 'cakephp-5',
-	// 	dir:   'cakephp-5/webroot/',
+	// 	dir:   'cakephp-5/webroot',
 	// },
 	// 'getsimple-3': {
 	// 	name:  'GetSimpleCMS 3',
@@ -69,6 +71,7 @@ const packages = {
 		path:  'laminas-3',
 		vHost: 'laminas-3',
 		dir:   'laminas-3/public',
+		entry: 'index.php',
 	},
 	'laravel-11': {
 		name:  'Laravel 11',
@@ -76,16 +79,33 @@ const packages = {
 		path:  'laravel-11',
 		vHost: 'laravel-11',
 		dir:   'laravel-11/public',
+		entry: 'index.php',
 	},
+	// 'symfony-7': {
+	// 	name:  'Symfony 7',
+	// 	file:  '/backups/symfony-7.zip',
+	// 	path:  'symfony-7',
+	// 	vHost: 'symfony-7',
+	// 	dir:   'symfony-7/public',
+	// 	entry: 'index.php',
+	// },
+	// 'yii-2': {
+	// 	name:  'Yii 2',
+	// 	file:  '/backups/yii-2.zip',
+	// 	path:  'yii-2',
+	// 	vHost: 'yii-2',
+	// 	dir:   'yii-2/web',
+	// 	entry: 'index.php',
+	// },
 };
 
 const incomplete = new Map;
 
 export class Drupal extends Task
 {
-	static helpText = 'Run Drupal 7';
+	static helpText = 'Install PHP Packages';
 
-	title    = 'Drupal 7';
+	title    = 'PHP Package Installer';
 	icon     = '/apps/drupal-16-24bit.png';
 	template = require('./main.tmp');
 
@@ -139,7 +159,7 @@ export class Drupal extends Task
 		});
 
 		this.php.addEventListener('output', event => {
-			console.log(event.detail);
+			// console.log(event.detail);
 		});
 
 		this.window.initFilesystem  = event => this.initFilesystem(event);
@@ -198,6 +218,7 @@ export class Drupal extends Task
 			this.window.args.installPrefix = pkg.vHost;
 			this.window.args.installZip    = pkg.file;
 			this.window.args.installvHostDir = pkg.dir;
+			this.window.args.installEntry  = pkg.entry;
 		});
 
 		this.window.args.selectedPackage = 'drupal-7';
@@ -210,7 +231,7 @@ export class Drupal extends Task
 	{
 		const token = crypto.randomUUID();
 
-		console.log({action, params, accept, token});
+		// console.log({action, params, accept, token});
 
 		const ret = new Promise((_accept, _reject) => [accept, reject] = [_accept, _reject]);
 
@@ -231,6 +252,8 @@ export class Drupal extends Task
 
 	initFilesystem()
 	{
+		Home.instance().run('cgi-worker', ['--start-quiet']);
+
 		this.window.args.confirm = '0';
 		this.window.args.step = 'step-install-options';
 		this.window.args.installPercent = 0;
@@ -248,18 +271,36 @@ export class Drupal extends Task
 		navigator.locks.request("php-persist", async (lock) => {
 			this.window.args.step = 'step-waiting';
 
+			const trackProgress = event => {
+				const installPercent = parseFloat(event.detail);
+				this.window.args.installPercent = parseInt(10 * installPercent) * 10;
+			};
+
+			this.php.addEventListener('output', trackProgress);
+
 			const settings = await this.sendMessage('getSettings');
 			const vHostPrefix = '/php-wasm/' + this.window.args.installPrefix;
 			const installPath = '/persist/' + this.window.args.installPath;
 			const existingvHost = settings.vHosts.find(vHost => vHost.pathPrefix === vHostPrefix);
 
+			console.log(existingvHost);
+
 			if(!existingvHost)
 			{
 				settings.vHosts.push({
 					pathPrefix: vHostPrefix,
-					directory: '/persist/' + this.window.args.installvHostDir
+					directory:  '/persist/' + this.window.args.installvHostDir,
+					entrypoint: this.window.args.installEntry
 				});
+
+				console.log(this.window.args.installEntry);
 			}
+			else
+			{
+				existingvHost.directory = '/persist/' + this.window.args.installvHostDir;
+				existingvHost.entrypoint = this.window.args.installEntry;
+			}
+
 
 			await this.sendMessage('writeFile', ['/persist/restore.zip', new Uint8Array(zipContents)]);
 			await this.sendMessage('setSettings', [settings]);
@@ -268,22 +309,28 @@ export class Drupal extends Task
 			await this.sendMessage('writeFile', ['/config/restore-path.tmp', installPath])
 			.then(result => this.php.run(require('./init.tmp.php')))
 			.then(result => this.sendMessage('refresh', []))
+			.then(() => this.php.removeEventListener('output', trackProgress))
 			.then(() => this.window.args.step = 'step-3');
 		});
 	}
 
 	clearFilesystem()
 	{
+		Home.instance().run('cgi-worker', ['--start-quiet']);
+
 		this.window.args.confirm = '0';
 		this.window.args.step = 'step-2-clear';
 	}
 
 	async confirmClearFilesystem()
 	{
-		navigator.locks.request("php-persist", async (lock) => {
-			const openDb = indexedDB.open("/persist", 21);
+		Home.instance().run('cgi-worker', ['--start-quiet']);
 
-			openDb.onsuccess = event => {
+		navigator.locks.request("php-persist", async (lock) => {
+			const fileDb = indexedDB.open("/persist", 21);
+			const configDb = indexedDB.open("/config", 21);
+
+			const clearDb = openDb => event => {
 				const db = openDb.result;
 				const transaction = db.transaction(["FILE_DATA"], "readwrite");
 				const objectStore = transaction.objectStore("FILE_DATA");
@@ -297,6 +344,9 @@ export class Drupal extends Task
 					this.window.args.step = 'step-1';
 				});
 			};
+
+			fileDb.onsuccess = clearDb(fileDb);
+			configDb.onsuccess = clearDb(configDb);
 		});
 	}
 
@@ -313,16 +363,17 @@ export class Drupal extends Task
 
 	viewFiles()
 	{
-		Home.instance().run('repo-browser', [('persist/' + this.window.args.installPath)])
+		Home.instance().run('omni-explorer', [('persist/' + this.window.args.installPath)])
 	}
 
 	viewAllFiles()
 	{
-		Home.instance().run('repo-browser', [('persist')])
+		Home.instance().run('omni-explorer', [('persist')])
 	}
 
 	async backupSite()
 	{
+		Home.instance().run('cgi-worker', ['--start-quiet']);
 		await this.php;
 
 		this.window.args.step = 'step-2-backup';
@@ -331,18 +382,9 @@ export class Drupal extends Task
 		this.window.args.errorMessage = '';
 
 		navigator.locks.request("php-persist", async (lock) => {
-			let fileCount, filesInstalled = 0;
 			const trackProgress = event => {
-				if(!fileCount)
-				{
-					fileCount = parseInt(event.detail);
-					return;
-				}
-				filesInstalled++;
-				const installPercent = 100 * filesInstalled / fileCount;
-				this.window.onTimeout(installPercent, () => {
-					this.window.args.installPercent = installPercent;
-				});
+				const installPercent = parseFloat(event.detail);
+				this.window.args.installPercent = 100 * installPercent;
 			};
 			this.php.addEventListener('output', trackProgress);
 			await this.php.run(require('./backup.tmp.php'))
@@ -374,6 +416,7 @@ export class Drupal extends Task
 
 	confirmRestoreSite()
 	{
+		Home.instance().run('cgi-worker', ['--start-quiet']);
 		const input = document.createElement('input');
 		input.type = 'file';
 
