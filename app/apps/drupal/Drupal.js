@@ -252,7 +252,7 @@ export class Drupal extends Task
 
 	initFilesystem()
 	{
-		Home.instance().run('cgi-worker', ['--start-quiet']);
+		Home.instance().run('cgi-worker', ['--start-quiet'], true);
 
 		this.window.args.confirm = '0';
 		this.window.args.step = 'step-install-options';
@@ -261,19 +261,27 @@ export class Drupal extends Task
 
 	async confirmInitFilesystem()
 	{
+		this.window.args.message = 'Downloading package...';
+		this.window.args.step = 'step-waiting';
+		this.window.args.errorMessage = '';
+
 		await this.php;
 
 		this.window.args.installPercent = 0;
 
 		const download = await fetch(this.window.args.installZip);
+
 		const zipContents = await download.arrayBuffer();
 
-		navigator.locks.request("php-persist", async (lock) => {
-			this.window.args.step = 'step-waiting';
+		this.window.args.message = 'Waiting for lock...';
 
+		navigator.locks.request("php-persist", async (lock) => {
 			const trackProgress = event => {
 				const installPercent = parseFloat(event.detail);
-				this.window.args.installPercent = parseInt(10 * installPercent) * 10;
+				this.window.onTimeout(
+					installPercent * 1000,
+					() => this.window.args.installPercent = parseInt(installPercent * 100)
+				);
 			};
 
 			this.php.addEventListener('output', trackProgress);
@@ -301,6 +309,7 @@ export class Drupal extends Task
 				existingvHost.entrypoint = this.window.args.installEntry;
 			}
 
+			this.window.args.message = 'Unpacking...';
 
 			await this.sendMessage('writeFile', ['/persist/restore.zip', new Uint8Array(zipContents)]);
 			await this.sendMessage('setSettings', [settings]);
@@ -308,15 +317,16 @@ export class Drupal extends Task
 
 			await this.sendMessage('writeFile', ['/config/restore-path.tmp', installPath])
 			.then(result => this.php.run(require('./init.tmp.php')))
-			.then(result => this.sendMessage('refresh', []))
 			.then(() => this.php.removeEventListener('output', trackProgress))
-			.then(() => this.window.args.step = 'step-3');
+			.then(() => this.window.args.message = 'Reloading PHP...')
+			.then(() => this.sendMessage('refresh', []))
+			.then(() => this.window.args.step = 'step-3')
 		});
 	}
 
 	clearFilesystem()
 	{
-		Home.instance().run('cgi-worker', ['--start-quiet']);
+		Home.instance().run('cgi-worker', ['--start-quiet'], true);
 
 		this.window.args.confirm = '0';
 		this.window.args.step = 'step-2-clear';
@@ -324,7 +334,8 @@ export class Drupal extends Task
 
 	async confirmClearFilesystem()
 	{
-		Home.instance().run('cgi-worker', ['--start-quiet']);
+		Home.instance().run('cgi-worker', ['--start-quiet'], true);
+		this.window.args.errorMessage = '';
 
 		navigator.locks.request("php-persist", async (lock) => {
 			const fileDb = indexedDB.open("/persist", 21);
@@ -357,23 +368,23 @@ export class Drupal extends Task
 
 	openSite()
 	{
-		Home.instance().run('cgi-worker', ['--start-quiet'])
+		Home.instance().run('cgi-worker', ['--start-quiet'], true)
 		setTimeout(() => window.open('/php-wasm/' + this.window.args.installPrefix), 200);
 	}
 
 	viewFiles()
 	{
-		Home.instance().run('omni-explorer', [('persist/' + this.window.args.installPath)])
+		Home.instance().run('omni-explorer', ['persist/' + this.window.args.installPath])
 	}
 
 	viewAllFiles()
 	{
-		Home.instance().run('omni-explorer', [('persist')])
+		Home.instance().run('omni-explorer', ['persist'])
 	}
 
-	async backupSite()
+	async backupSite(event)
 	{
-		Home.instance().run('cgi-worker', ['--start-quiet']);
+		Home.instance().run('cgi-worker', ['--start-quiet'], true);
 		await this.php;
 
 		this.window.args.step = 'step-2-backup';
@@ -393,7 +404,7 @@ export class Drupal extends Task
 			.then(result => {
 				this.php.removeEventListener('output', trackProgress);
 				const blob = new Blob([result], {type:'application/zip'})
-				const link = document.createElement('a');
+				const link = event.view.document.createElement('a');
 				link.href = URL.createObjectURL(blob);
 				link.click();
 				this.window.args.step = 'step-1';
@@ -414,10 +425,10 @@ export class Drupal extends Task
 		this.window.args.installPercent = 0;
 	}
 
-	confirmRestoreSite()
+	confirmRestoreSite(event)
 	{
-		Home.instance().run('cgi-worker', ['--start-quiet']);
-		const input = document.createElement('input');
+		Home.instance().run('cgi-worker', ['--start-quiet'], true);
+		const input = event.view.document.createElement('input');
 		input.type = 'file';
 
 		input.addEventListener('change', () => {
