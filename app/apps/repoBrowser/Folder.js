@@ -154,8 +154,6 @@ export class Folder extends View
 			this.args.browser.window.args.filename = this.args.name;
 			this.args.browser.window.args.control  = iconList;
 			this.args.browser.window.args.viewRaw  = 'view-control-rendered';
-
-			console.log(iconList);
 		});
 	}
 
@@ -220,6 +218,7 @@ export class Folder extends View
 			}).catch(error => {
 				this.expanding = false;
 				this.args.browser.print('Error: ' + error.message);
+				console.error(error);
 				reject(error);
 			});
 		});
@@ -234,9 +233,10 @@ export class Folder extends View
 		this.args.browser.parentDir = this.parent;
 
 		backend.displayFile({file, dir, browser: this.args.browser})
-		.catch(error => this.args.browser.print(
-			`Error:  ${error.message} ${error.code} ${error.message}`
-		));
+		.catch(error => {
+			console.error(error);
+			this.args.browser.print(`Error:  ${error.message} ${error.code} ${error.message}`)
+		});
 	}
 
 	populate(url)

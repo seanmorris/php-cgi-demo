@@ -25,13 +25,14 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => event.respondWith(new Promise(accept => {
 	const url     = new URL(event.request.url);
 	const prefix  = php.prefix;
-	const request = event.request;
 
 	if(url.pathname.substr(0, prefix.length) === prefix && url.hostname === self.location.hostname)
 	{
-		return php.request(request).then(response => {
+		return php.request(event.request).then(response => {
 
-			const logLine = `[${(new Date).toISOString()}] #${php.count} 127.0.0.1 - "${request.method} ${url.pathname}" - HTTP/1.1 ${response.status}`;
+			const logLine = `[${(new Date).toISOString()}]`
+				+ `#${php.count} 127.0.0.1 - "${event.request.method}`
+				+ `${url.pathname}" - HTTP/1.1 ${response.status}`;
 
 			clients.matchAll({includeUncontrolled: true}).then(clients => {
 				clients.forEach(client => client.postMessage({
@@ -52,7 +53,7 @@ self.addEventListener('fetch', event => event.respondWith(new Promise(accept => 
 		_path.shift();
 	}
 
-	accept(fetch(request));
+	accept(fetch(event.request));
 })));
 
 self.addEventListener('message', async event => {

@@ -81,6 +81,14 @@ const packages = {
 		dir:   'laravel-11/public',
 		entry: 'index.php',
 	},
+	// 'phpLiteAdmin-1': {
+	// 	name:  'phpLiteAdmin 1.9',
+	// 	file:  '/backups/phpLiteAdmin-1.9.zip',
+	// 	path:  'phpLiteAdmin-1',
+	// 	vHost: 'phpLiteAdmin-1',
+	// 	dir:   'phpLiteAdmin-1',
+	// 	entry: 'phpliteadmin.php',
+	// },
 	// 'symfony-7': {
 	// 	name:  'Symfony 7',
 	// 	file:  '/backups/symfony-7.zip',
@@ -198,15 +206,7 @@ export class Drupal extends Task
 			}
 		});
 
-		// const msgBus = new Proxy(Object.create(null), {
-		// 	get: (target, action, receiver) => {
-		// 		console.log({target, action, receiver});
-		// 		return (...params)  => this.sendMessage(action, params);
-		// 	}
-		// });
-
 		this.window.args.bindTo('selectedPackage', v => {
-			console.log(v);
 			if(!packages[v])
 			{
 				return;
@@ -275,53 +275,51 @@ export class Drupal extends Task
 
 		this.window.args.message = 'Waiting for lock...';
 
-		navigator.locks.request("php-persist", async (lock) => {
-			const trackProgress = event => {
-				const installPercent = parseFloat(event.detail);
-				this.window.onTimeout(
-					installPercent * 1000,
-					() => this.window.args.installPercent = parseInt(installPercent * 100)
-				);
-			};
+		const trackProgress = event => {
+			const installPercent = parseFloat(event.detail);
+			this.window.onTimeout(
+				installPercent * 1000,
+				() => this.window.args.installPercent = parseInt(installPercent * 100)
+			);
+		};
 
-			this.php.addEventListener('output', trackProgress);
+		this.php.addEventListener('output', trackProgress);
 
-			const settings = await this.sendMessage('getSettings');
-			const vHostPrefix = '/php-wasm/' + this.window.args.installPrefix;
-			const installPath = '/persist/' + this.window.args.installPath;
-			const existingvHost = settings.vHosts.find(vHost => vHost.pathPrefix === vHostPrefix);
+		const settings = await this.sendMessage('getSettings');
+		const vHostPrefix = '/php-wasm/' + this.window.args.installPrefix;
+		const installPath = '/persist/' + this.window.args.installPath;
+		const existingvHost = settings.vHosts.find(vHost => vHost.pathPrefix === vHostPrefix);
 
-			console.log(existingvHost);
+		console.log(existingvHost);
 
-			if(!existingvHost)
-			{
-				settings.vHosts.push({
-					pathPrefix: vHostPrefix,
-					directory:  '/persist/' + this.window.args.installvHostDir,
-					entrypoint: this.window.args.installEntry
-				});
+		if(!existingvHost)
+		{
+			settings.vHosts.push({
+				pathPrefix: vHostPrefix,
+				directory:  '/persist/' + this.window.args.installvHostDir,
+				entrypoint: this.window.args.installEntry
+			});
 
-				console.log(this.window.args.installEntry);
-			}
-			else
-			{
-				existingvHost.directory = '/persist/' + this.window.args.installvHostDir;
-				existingvHost.entrypoint = this.window.args.installEntry;
-			}
+			console.log(this.window.args.installEntry);
+		}
+		else
+		{
+			existingvHost.directory = '/persist/' + this.window.args.installvHostDir;
+			existingvHost.entrypoint = this.window.args.installEntry;
+		}
 
-			this.window.args.message = 'Unpacking...';
+		this.window.args.message = 'Unpacking...';
 
-			await this.sendMessage('writeFile', ['/persist/restore.zip', new Uint8Array(zipContents)]);
-			await this.sendMessage('setSettings', [settings]);
-			await this.sendMessage('storeInit', []);
+		await this.sendMessage('writeFile', ['/persist/restore.zip', new Uint8Array(zipContents)]);
+		await this.sendMessage('setSettings', [settings]);
+		await this.sendMessage('storeInit', []);
 
-			await this.sendMessage('writeFile', ['/config/restore-path.tmp', installPath])
-			.then(result => this.php.run(require('./init.tmp.php')))
-			.then(() => this.php.removeEventListener('output', trackProgress))
-			.then(() => this.window.args.message = 'Reloading PHP...')
-			.then(() => this.sendMessage('refresh', []))
-			.then(() => this.window.args.step = 'step-3')
-		});
+		await this.sendMessage('writeFile', ['/config/restore-path.tmp', installPath])
+		.then(() => this.php.run(require('./init.tmp.php')))
+		.then(() => this.php.removeEventListener('output', trackProgress))
+		.then(() => this.window.args.message = 'Reloading PHP...')
+		.then(() => this.sendMessage('refresh', []))
+		.then(() => this.window.args.step = 'step-3');
 	}
 
 	clearFilesystem()
@@ -337,28 +335,26 @@ export class Drupal extends Task
 		Home.instance().run('cgi-worker', ['--start-quiet'], true);
 		this.window.args.errorMessage = '';
 
-		navigator.locks.request("php-persist", async (lock) => {
-			const fileDb = indexedDB.open("/persist", 21);
-			const configDb = indexedDB.open("/config", 21);
+		const fileDb = indexedDB.open("/persist", 21);
+		const configDb = indexedDB.open("/config", 21);
 
-			const clearDb = openDb => event => {
-				const db = openDb.result;
-				const transaction = db.transaction(["FILE_DATA"], "readwrite");
-				const objectStore = transaction.objectStore("FILE_DATA");
-				const objectStoreRequest = objectStore.clear();
+		const clearDb = openDb => event => {
+			const db = openDb.result;
+			const transaction = db.transaction(["FILE_DATA"], "readwrite");
+			const objectStore = transaction.objectStore("FILE_DATA");
+			const objectStoreRequest = objectStore.clear();
 
-				objectStoreRequest.onsuccess = reloadPhp;
+			objectStoreRequest.onsuccess = reloadPhp;
 
-				this.window.args.installPercent = 0;
+			this.window.args.installPercent = 0;
 
-				this.window.onTimeout(100, () => {
-					this.window.args.step = 'step-1';
-				});
-			};
+			this.window.onTimeout(100, () => {
+				this.window.args.step = 'step-1';
+			});
+		};
 
-			fileDb.onsuccess = clearDb(fileDb);
-			configDb.onsuccess = clearDb(configDb);
-		});
+		fileDb.onsuccess = clearDb(fileDb);
+		configDb.onsuccess = clearDb(configDb);
 	}
 
 	startServer()
@@ -392,30 +388,30 @@ export class Drupal extends Task
 		this.window.args.installPercent = 0;
 		this.window.args.errorMessage = '';
 
-		navigator.locks.request("php-persist", async (lock) => {
-			const trackProgress = event => {
-				const installPercent = parseFloat(event.detail);
-				this.window.args.installPercent = 100 * installPercent;
-			};
-			this.php.addEventListener('output', trackProgress);
-			await this.php.run(require('./backup.tmp.php'))
-			.then(() => this.sendMessage('refresh', []))
-			.then(() => this.sendMessage('readFile', ['/persist/backup.zip']))
-			.then(result => {
-				this.php.removeEventListener('output', trackProgress);
-				const blob = new Blob([result], {type:'application/zip'})
-				const link = event.view.document.createElement('a');
-				link.href = URL.createObjectURL(blob);
-				link.click();
-				this.window.args.step = 'step-1';
-			})
-			.then(() => this.sendMessage('unlink', ['/persist/backup.zip']))
-			.catch(error => {
-				console.log("ERR!");
-				console.error(error);
-				this.window.args.errorMessage = error.message;
-			});
+		const trackProgress = event => {
+			const installPercent = parseFloat(event.detail);
+			this.window.args.installPercent = 100 * installPercent;
+		};
+
+		this.php.addEventListener('output', trackProgress);
+
+		await this.php.run(require('./backup.tmp.php'))
+		.then(() => this.sendMessage('refresh', []))
+		.then(() => this.sendMessage('readFile', ['/persist/backup.zip']))
+		.then(result => {
+			this.php.removeEventListener('output', trackProgress);
+			const blob = new Blob([result], {type:'application/zip'})
+			const link = event.view.document.createElement('a');
+			link.href = URL.createObjectURL(blob);
+			link.click();
+			this.window.args.step = 'step-1';
 		})
+		.then(() => this.sendMessage('unlink', ['/persist/backup.zip']))
+		.catch(error => {
+			console.log("ERR!");
+			console.error(error);
+			this.window.args.errorMessage = error.message;
+		});
 	}
 
 	restoreSite()
@@ -433,13 +429,11 @@ export class Drupal extends Task
 
 		input.addEventListener('change', () => {
 			input.files[0].arrayBuffer().then(zipContents => {
-				navigator.locks.request("php-persist", async (lock) => {
-					this.window.args.step = 'step-waiting';
-					this.sendMessage('writeFile', ['/persist/restore.zip', new Uint8Array(zipContents)])
-					.then(result => this.php.run(require('./restore.tmp.php')))
-					.then(result => this.sendMessage('refresh', []))
-					.then(() => this.window.args.step = 'step-3');
-				});
+				this.window.args.step = 'step-waiting';
+				this.sendMessage('writeFile', ['/persist/restore.zip', new Uint8Array(zipContents)])
+				.then(result => this.php.run(require('./restore.tmp.php')))
+				.then(result => this.sendMessage('refresh', []))
+				.then(() => this.window.args.step = 'step-3');
 			});
 		});
 

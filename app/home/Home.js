@@ -30,7 +30,7 @@ export class Home extends View
 
 		this.template = require('./home.tmp');
 
-		this.open = {x: 80, y: 50};
+		this.open = {x: 120, y: 50};
 
 		this.args.desktop = new Desktop({}, this);
 
@@ -82,7 +82,7 @@ export class Home extends View
 		this.routes = {
 
 			// '': () => {}
-			'': () => Router.go('/drupal')
+			'': () => Router.go('/installer')
 
 			, '*': (args) => {
 

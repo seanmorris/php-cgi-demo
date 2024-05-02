@@ -19,6 +19,7 @@
 	position: relative;
 }
 
+.sites-dialog button .icon,
 .cgi-dialog button .icon {
 	display: inline-block;
 	position: relative;
@@ -27,7 +28,7 @@
 	height:16px;
 }
 
-.cgi-dialog button .icon.play {
+button .icon.play {
 	background-image: url(/ui/play-icon.png);
 }
 
@@ -39,8 +40,12 @@
 	background-image: url(/ui/help-icon.png);
 }
 
-.cgi-dialog button .icon.cash{
+button .icon.cash{
 	background-image: url(/ui/cash-icon.png);
+}
+
+button .icon.refresh{
+	background-image: url(/arrow-circle.png);
 }
 
 span.property:empty {

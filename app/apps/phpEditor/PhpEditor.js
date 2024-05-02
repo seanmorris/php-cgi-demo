@@ -24,7 +24,7 @@ export class PhpEditor extends Task
 {
 	static helpText = 'Run PHP in your browser.';
 
-	title    = 'SM PHP Shell';
+	title    = 'PHP Interpreter';
 	icon     = '/apps/php-16-24bit.png';
 	template = require('./php-editor.tmp');
 
@@ -37,12 +37,16 @@ export class PhpEditor extends Task
 
 		this.window.classes['mode-script'] = true;
 
-		this.window.args.width  = this.window.args.minWidth  = `720px`;
-		this.window.args.height = this.window.args.minHeight = `800px`;
+		this.window.help = event => this.help(event);
+
+		this.window.args.width  = `720px`;
+		this.window.args.height = `800px`;
+
+		this.window.args.minWidth  = `400px`;
+		this.window.args.minHeight = `500px`;
 
 		this.modes = ['script', 'iffe', 'term'];
 		this.mode  = 'script';
-
 
 		this.returnConsole = new Terminal;
 		// this.inputConsole  = new Terminal({path:{php: PhpTask}});
@@ -95,7 +99,10 @@ export class PhpEditor extends Task
 })();`;
 		const Php = require('php-wasm/PhpWeb').PhpWeb;
 
-		const php = new Php({persist:[{mountPath: '/persist'}, {mountPath:'/config'}]});
+		const php = new Php({
+			persist:[ {mountPath: '/persist'}, {mountPath:'/config'} ],
+			autoTransaction: false
+		});
 
 		this.window.listen(php, 'ready', () => {
 			this.window.classes.loading = false;
@@ -124,58 +131,59 @@ export class PhpEditor extends Task
 			this.window.args.layout = layout;
 		}
 
+		this.requests = [];
+
 		this.window.runCode = (event) => {
-
-			this.window.classes.loading = true;
-			this.window.args.status = 'PHP Running...';
-
-			this.window.tags.runButton.disabled = true;
-
-			this.window.args.output = '';
 
 			if(!this.window.args.persist)
 			{
 				this.window.refresh();
 			}
 
+			this.window.args.output = '';
+
 			const code = String(this.window.args.input)
 				.replace(/^<\?php/,'')
 				.replace(/;$/,'');
 
-			navigator.locks.request("php-persist", async (lock) => {
+			this.requests.push(code);
 
-				php.exec(code).then(retVal => {
+			this.window.classes.loading = true;
+			this.window.args.status = 'PHP Running...';
 
-					this.window.classes.loading = false;
-					this.window.args.status = 'PHP Ready!';
-					this.window.tags.runButton.disabled = false;
+			navigator.locks.request("php-wasm-fs-lock", async (lock) => {
 
-					this.returnConsole.args.output.push(retVal);
+				if(!this.requests.length)
+				{
+					return;
+				}
 
-				});
+				await php.startTransaction();
 
+				while(this.requests.length)
+				{
+					this.returnConsole.args.output.push(
+						await php.exec(this.requests.shift())
+					);
+				}
+
+				await php.commitTransaction();
+
+				this.window.classes.loading = false;
+				this.window.args.status = 'PHP Ready!';
 			});
 
 			// this.window.args.exitCode = exitCode;
 		};
 
 		this.window.listen(php, 'output', event => {
-
-			const detail   = event.detail.join("\n").trim();
-
+			const detail = event.detail.join("\n").trim();
 			this.outputConsole.args.output.push(detail);
 			this.window.args.htmlFrame.args.frameSource += detail;
 		});
 
 		this.window.listen(php, 'error', event => {
-
-			const detail = event.detail.join("\n ").trim();
-
-			if(!detail)
-			{
-				return;
-			}
-
+			const detail = event.detail.join("\n").trim();
 			this.errorConsole.args.output.push(detail);
 		});
 
@@ -267,5 +275,19 @@ export class PhpEditor extends Task
 
 			editor.resize();
 		});
+	}
+
+	help()
+	{
+		const subArgs = {
+			template: require('./help.tmp')
+			, title:  'Help'
+			, width:   '640px'
+			, height:  '500px'
+		};
+
+		const subWindow = this.openSubWindow(subArgs);
+
+		subWindow.focus();
 	}
 }

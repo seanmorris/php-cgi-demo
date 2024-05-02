@@ -648,7 +648,8 @@ export class Window extends Mixin.from(View, ViewProcessor, CssSwitch)
 			this.pos.y = start.y + moved.y;
 		}
 
-		const options = {once: true};
+		const downOptions = {passive: true};
+		const upOptions = {once: true};
 
 		const drop = (event) => {
 			this.classes.moving = false;
@@ -663,19 +664,19 @@ export class Window extends Mixin.from(View, ViewProcessor, CssSwitch)
 				this.pos.x = 0;
 			}
 
-			document.removeEventListener('mousemove', moved);
-			document.removeEventListener('touchmove', moved);
+			document.removeEventListener('mousemove', moved, downOptions);
+			document.removeEventListener('touchmove', moved, downOptions);
 
-			document.removeEventListener('mouseup',  drop, options);
-			document.removeEventListener('touchend', drop, options);
+			document.removeEventListener('mouseup',  drop, upOptions);
+			document.removeEventListener('touchend', drop, upOptions);
 
 		};
 
-		document.addEventListener('touchmove', moved);
-		document.addEventListener('mousemove', moved);
+		document.addEventListener('touchmove', moved, downOptions);
+		document.addEventListener('mousemove', moved, downOptions);
 
-		document.addEventListener('mouseup',  drop, options);
-		document.addEventListener('touchend', drop, options);
+		document.addEventListener('mouseup',  drop, upOptions);
+		document.addEventListener('touchend', drop, upOptions);
 	}
 
 	horizontalResizeGrabbed(event)

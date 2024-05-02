@@ -19,6 +19,7 @@ import { Console as Terminal } from 'subspace-console/Console';
 
 import { GitHubBackend } from './GitHubBackend';
 import { IdbfsBackend } from './IdbfsBackend';
+import { msgBus } from '../../msgBus';
 
 const fileSystems = [
 	{
@@ -257,6 +258,7 @@ export class RepoBrowser extends Task
 						break;
 
 					case 'ico':
+					case 'bmp':
 					case 'gif':
 					case 'png':
 					case 'jpg':
@@ -524,14 +526,14 @@ export class RepoBrowser extends Task
 		}
 	}
 
-	downloadFile()
+	downloadFile(event)
 	{
 		const path = '/' + this.selected.args.file.path;
 		const parts = path.split('/');
 
 		this.backend.readFile({path}).then(content => {
 			content = new TextDecoder().decode(content);
-			const link = document.createElement('a');
+			const link = event.view.document.createElement('a');
 			link.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
 			link.setAttribute('download', parts[parts.length - 1]);
 
@@ -540,7 +542,34 @@ export class RepoBrowser extends Task
 	}
 
 	uploadFile()
-	{}
+	{
+		if(!this.currentDir)
+		{
+			return;
+		}
+
+		const input = event.view.document.createElement('input');
+		input.type = 'file';
+
+		input.addEventListener('change', () => {
+			input.files[0].arrayBuffer().then(async zipContents => {
+				this.window.args.step = 'step-waiting';
+				const files = [...input.files];
+
+				const pairs = await Promise.all(files.map(async file => ({file, buffer: await file.arrayBuffer()}) ));
+
+				await Promise.all(pairs.map(
+					({file, buffer}) => msgBus.writeFile(this.currentDir.args.url + '/' + file.name, new Uint8Array(buffer))
+				));
+
+				await msgBus.refresh();
+
+				this.refresh();
+			});
+		});
+
+		input.click();
+	}
 
 	loadRepos(page = 0)
 	{

@@ -1,46 +1,6 @@
 import { Router } from "curvature/base/Router";
 import { Folder as Resource } from "./Folder";
-// import { GitHub } from "../gitHub/GitHub";
-
-const incomplete = new Map;
-
-navigator.serviceWorker.addEventListener('message', event => {
-
-	if(event.data.re && incomplete.has(event.data.re))
-	{
-		const callbacks = incomplete.get(event.data.re);
-
-		if(!event.data.error)
-		{
-			callbacks[0](event.data.result);
-		}
-		else
-		{
-			callbacks[1](event.data.error);
-		}
-	}
-});
-
-const sendMessage = (action, params, accept, reject) => {
-	const token = crypto.randomUUID();
-
-	// console.log({action, params, accept, token});
-
-	const ret = new Promise((_accept, _reject) => [accept, reject] = [_accept, _reject]);
-
-	incomplete.set(token, [accept, reject]);
-
-	navigator
-	.serviceWorker
-	.getRegistration(`${location.origin}/DrupalWorker.js`)
-	.then(registration => registration.active.postMessage({action, params, token}));
-
-	return ret;
-};
-
-const msgBus = new Proxy(Object.create(null), {
-	get: (target, action, receiver) => (...params)  => sendMessage(action, params)
-});
+import { msgBus } from "../../msgBus";
 
 export class IdbfsBackend
 {
@@ -145,21 +105,37 @@ export class IdbfsBackend
 		});
 	}
 
-	displayFile({file, dir, browser})
+	async displayFile({file, dir, browser})
 	{
 		if(file.type !== 'dir')
 		{
 			browser.window.args.content  = '';
 			browser.window.args.url      = '';
 			browser.window.args.filename = '';
-			Router.go(`/${browser.cmd}/${file.path}`, 2);
-			return msgBus.readFile('/' + file.path).then(content => {
-				content = new TextDecoder().decode(content);
+			browser.window.args.download = '';
+
+			const mimes = await (await fetch('/static/mime-extensions.json')).json();
+			const extension = String(String(file.path).split('.').pop());
+			const mimeType = typeof mimes['.' + extension] === 'object' ? mimes['.' + extension].type : mimes['.' + extension] ?? '';
+			const [mediaType, subType] = mimeType.split('/');
+
+			let content = await msgBus.readFile('/' + file.path)
+
+			if(mediaType === 'text' || mediaType === 'application' || mediaType === '')
+			{
 				// content = decodeURIComponent(escape(atob(content)));
+				content = new TextDecoder().decode(content);
 				browser.window.args.content = content;
-				browser.window.args.filename = file.name;
-				browser.window.args.filepath = '/' + file.path;
-			});
+			}
+			else
+			{
+				browser.window.args.download = URL.createObjectURL(new Blob([content]));
+			}
+
+			browser.window.args.filename = file.name;
+			browser.window.args.filepath = '/' + file.path;
+
+			Router.go(`/${browser.cmd}/${file.path}`, 2);
 		}
 		else
 		{

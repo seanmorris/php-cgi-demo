@@ -122,20 +122,32 @@ export class Desktop extends View
 				, bits: 24
 			})
 			, new Icon({
-				action: 'omni-explorer'
-				, name: 'Omni Explorer'
-				, icon: 73
-				// , path: 'w98'
-			})
-			, new Icon({
 				action: 'cgi-worker'
 				, name: 'php cgi service worker'
 				, icon: 'php'
 				, path: 'apps'
 				, bits: 24
 			})
-
-
+			, new Icon({
+				action: 'omni-explorer'
+				, name: 'Omni Explorer'
+				, icon: 73
+				// , path: 'w98'
+			})
+			, new Icon({
+				action: 'sites'
+				, name: 'installed sites'
+				, icon: 'template_world'
+				, path: 'w98'
+				, bits: 4
+			})
+			, new Icon({
+				action: 'help'
+				, name: 'help'
+				, icon: 'help_book_big'
+				, path: 'w98'
+				, bits: 4
+			})
 		];
 
 		this.args.endIcons = [

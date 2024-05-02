@@ -18,9 +18,11 @@ import { Dosbox       } from 'apps/dosbox/Dosbox';
 import { Letsvue      } from 'apps/letsvue/Letsvue';
 import { Harp         } from 'apps/harp/Harp';
 import { Game         } from 'apps/sonic-3000/Game';
+import { Sites        } from 'apps/sites/Sites';
 import { CardEditor   } from 'apps/cardEditor/CardEditor';
 import { Smim         } from 'apps/smim/Smim';
 import { Cubes        } from 'apps/cubes/Cubes';
+import { Help         } from 'apps/help/Help';
 
 import { FileBrowser  } from 'apps/fileBrowser/FileBrowser';
 
@@ -51,6 +53,8 @@ export const Path = {
 	, 'card-editor':  CardEditor
 	, 'smim':         Smim
 	, 'cubes':        Cubes
+	, 'help':         Help
+	, 'sites':        Sites
 	// , 'clones':       ClonesNBarrels
 	// , 'dos':          Dosbox
 	// , 'letsvue':      Letsvue
