@@ -129,11 +129,6 @@ export class Drupal extends Task
 			this.window.args.width  = `800px`;
 			this.window.args.height = `640px`;
 		}
-		else
-		{
-			this.window.args.width  = `100vw`;
-			this.window.args.height = `100vh`;
-		}
 
 		this.init = Date.now();
 
