@@ -1,5 +1,6 @@
 body {
 	overflow: hidden;
+	position: fixed;
 }
 
 [data-role="window-host"] {
