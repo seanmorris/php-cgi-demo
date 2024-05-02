@@ -38,6 +38,7 @@ export const Path = {
 	, 'window':       Task
 	, 'php':          PhpEditor
 	, 'cgi-worker':   Dialog
+	, 'php-wasm':     Dialog
 	, 'github':       GitHub
 	// , 'npm-unpkgr':   NpmUnpkgr
 	, 'clippy':       Clippy

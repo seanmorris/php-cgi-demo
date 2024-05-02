@@ -192,10 +192,19 @@ export class Dialog extends Task
 		if(!this.args.registration)
 		{
 			serviceWorker.register(`${location.origin}/DrupalWorker.js`)
-			.then(registration => this.args.registration = registration);
+			.then(registration => {
+				if(this.cmd === 'php-wasm')
+				{
+					location.reload();
+				}
+				this.args.registration = registration
+			});
 		}
 
-		serviceWorker.ready.then(registration => this.args.registration = registration);
+		serviceWorker.ready.then(registration => {
+			this.args.registration = registration
+		});
+
 	}
 
 	stopService(event)
