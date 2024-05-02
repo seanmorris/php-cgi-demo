@@ -4,7 +4,7 @@
 		<div class = "rows liquid">
 			<label class = "rows v-padded">
 				<span class = "row left">Software:</span>
-				<select class = "row stretch inset white" cv-each = "packages:package:name" cv-on = "change:packageSelected">
+				<select class = "row stretch inset white" cv-each = "packages:package:name" cv-bind = "selectedPackage">
 					<option value = "[[name]]">[[package.name]]</option>
 				</select>
 			</label>

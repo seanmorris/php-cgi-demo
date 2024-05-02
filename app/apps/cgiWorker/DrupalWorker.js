@@ -1,7 +1,32 @@
 import { PhpCgi } from "./PhpCgi";
 
+// Log requests & send lines to all tabs
+const onRequest = (request, response) => {
+	const url = new URL(request.url);
+	const logLine = `[${(new Date).toISOString()}]`
+		+ `#${php.count} 127.0.0.1 - "${request.method}`
+		+ ` ${url.pathname}" - HTTP/1.1 ${response.status}`;
+
+	clients.matchAll({includeUncontrolled: true}).then(clients => {
+		clients.forEach(client => client.postMessage({
+			action: 'logRequest',
+			params: [logLine, {status: response.status}],
+		}))
+	});
+};
+
+const notFound = request => {
+	return new Response(
+		`<body><h1>404</h1>${request.url} not found</body>`,
+		{status: 404, headers:{'Content-Type': 'text/html'}}
+	);
+};
+
+// Spawn the PHP-CGI binary
 const php = new PhpCgi({
-	prefix: '/php-wasm'
+	onRequest
+	, notFound
+	, prefix: '/php-wasm'
 	, docroot: '/persist/www'
 	, types: {
 		jpeg: 'image/jpeg'
@@ -12,91 +37,13 @@ const php = new PhpCgi({
 	}
 });
 
-self.addEventListener('install', event => {
-	console.log('Install');
-	self.skipWaiting();
-});
+// Set up the event handlers
+self.addEventListener('install',  event => php.handleInstallEvent(event));
+self.addEventListener('activate', event => php.handleActivateEvent(event));
+self.addEventListener('fetch',    event => php.handleFetchEvent(event));
+self.addEventListener('message',  event => php.handleMessageEvent(event));
 
-self.addEventListener('activate', event => {
-	console.log('Activate');
-	event.waitUntil(clients.claim());
-});
-
-self.addEventListener('fetch', event => event.respondWith(new Promise(accept => {
-	const url     = new URL(event.request.url);
-	const prefix  = php.prefix;
-
-	if(url.pathname.substr(0, prefix.length) === prefix && url.hostname === self.location.hostname)
-	{
-		return php.request(event.request).then(response => {
-
-			const logLine = `[${(new Date).toISOString()}]`
-				+ `#${php.count} 127.0.0.1 - "${event.request.method}`
-				+ `${url.pathname}" - HTTP/1.1 ${response.status}`;
-
-			clients.matchAll({includeUncontrolled: true}).then(clients => {
-				clients.forEach(client => client.postMessage({
-					action: 'logRequest',
-					params: [logLine, {status: response.status}],
-				}))
-			});
-
-			accept(response);
-
-		});
-	}
-
-	const _path = url.pathname.split('/').slice(1);
-
-	if(_path[0] === 'php-wasm')
-	{
-		_path.shift();
-	}
-
-	accept(fetch(event.request));
-})));
-
-self.addEventListener('message', async event => {
-	const { data, source } = event;
-	const { action, token, params = [] } = data;
-
-	switch(action)
-	{
-		case 'analyzePath':
-		case 'readdir':
-		case 'readFile':
-		case 'stat':
-		case 'mkdir':
-		case 'rmdir':
-		case 'writeFile':
-		case 'rename':
-		case 'unlink':
-		case 'putEnv':
-		case 'refresh':
-		case 'getSettings':
-		case 'setSettings':
-		case 'getEnvs':
-		case 'setEnvs':
-		case 'storeInit':
-			let result, error;
-			try
-			{
-				result = await php[action](...params);
-			}
-			catch(_error)
-			{
-				error = JSON.parse(JSON.stringify(_error));
-				console.warn(_error);
-			}
-			finally
-			{
-				source.postMessage({re: token, result, error});
-			}
-
-		break;
-	}
-});
-
-self.addEventListener('push', event => {
-	console.log(event);
-});
+// Extras
+self.addEventListener('install', event => console.log('Install'));
+self.addEventListener('activate', event => console.log('Activate'));
+// self.addEventListener('push', event => console.log(event));

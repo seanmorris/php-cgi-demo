@@ -53,14 +53,15 @@ const requestTimes = new WeakMap;
 export class PhpCgi
 {
 	docroot    = null;
-	prefix     = null;
+	prefix     = '/php-wasm';
 	rewrite    = path => path;
 	cookies    = null;
 	types      = {};
+	onRequest  = () => {};
 	phpArgs    = {};
 
-	maxRequestAge = 0;
-	staticCacheTime = 0;
+	maxRequestAge    = 0;
+	staticCacheTime  = 0;
 	dynamicCacheTime = 0;
 	vHosts = [];
 
@@ -72,14 +73,17 @@ export class PhpCgi
 
 	queue = [];
 
-	constructor({docroot, prefix, rewrite, cookies, types, ...args} = {})
+	constructor({docroot, prefix, rewrite, cookies, types, onRequest, notFound, ...args} = {})
 	{
-		this.docroot = docroot || '';
-		this.prefix  = prefix  || '/php-wasm';
-		this.rewrite = rewrite || this.rewrite;
-		this.cookies = cookies || new Map;
-		this.types   = types   || {};
-		this.phpArgs = args;
+		this.docroot   = docroot   || this.docroot;
+		this.prefix    = prefix    || this.prefix;
+		this.rewrite   = rewrite   || this.rewrite;
+		this.cookies   = cookies   || new Map;
+		this.types     = types     || this.types;
+		this.onRequest = onRequest || this.onRequest;
+		this.notFound  = notFound  || this.notFound;
+
+		this.phpArgs   = args;
 
 		this.maxRequestAge    = args.maxRequestAge || 0;
 		this.staticCacheTime  = args.staticCacheTime || 0;
@@ -141,10 +145,77 @@ export class PhpCgi
 		return coordinator;
 	}
 
+	handleInstallEvent(event)
+	{
+		return self.skipWaiting();
+	}
+
+	handleActivateEvent(event)
+	{
+		return event.waitUntil(clients.claim());
+	}
+
+	async handleMessageEvent(event)
+	{
+		const { data, source } = event;
+		const { action, token, params = [] } = data;
+
+		switch(action)
+		{
+			case 'analyzePath':
+			case 'readdir':
+			case 'readFile':
+			case 'stat':
+			case 'mkdir':
+			case 'rmdir':
+			case 'writeFile':
+			case 'rename':
+			case 'unlink':
+			case 'putEnv':
+			case 'refresh':
+			case 'getSettings':
+			case 'setSettings':
+			case 'getEnvs':
+			case 'setEnvs':
+			case 'storeInit':
+				let result, error;
+				try
+				{
+					result = await this[action](...params);
+				}
+				catch(_error)
+				{
+					error = JSON.parse(JSON.stringify(_error));
+					console.warn(_error);
+				}
+				finally
+				{
+					source.postMessage({re: token, result, error});
+				}
+
+			break;
+		}
+	}
+
+	handleFetchEvent(event)
+	{
+		const url     = new URL(event.request.url);
+		const prefix  = this.prefix;
+
+		if(url.pathname.substr(0, prefix.length) === prefix && url.hostname === self.location.hostname)
+		{
+			requestTimes.set(event.request, Date.now());
+
+			return event.respondWith(this.request(event.request));
+		}
+		else
+		{
+			return fetch(event.request);
+		}
+	}
+
 	request(request)
 	{
-		requestTimes.set(request, Date.now());
-
 		return this._enqueue('_request', [request]);
 	}
 
@@ -230,8 +301,8 @@ export class PhpCgi
 						response.headers.append('Content-type', this.types[extension]);
 					}
 					cache.put(url, response.clone());
-					accept(response);
-					return;
+					this.onRequest(request, response);
+					return accept(response);
 				}
 				else if(aboutPath.exists && php.FS.isDir(aboutPath.object.mode) && '/' !== originalPath[ -1 + originalPath.length  ])
 				{
@@ -244,7 +315,24 @@ export class PhpCgi
 
 			if(this.maxRequestAge > 0 && Date.now() - requestTimes.get(request) > this.maxRequestAge)
 			{
-				return accept(new Response('408: Request Timed Out.', { status: 408 }));
+				const response = new Response('408: Request Timed Out.', { status: 408 });
+				this.onRequest(request, response);
+				return accept(response);
+			}
+
+			const aboutPath = php.FS.analyzePath(path);
+
+			if(!aboutPath.exists && this.notFound)
+			{
+				const rawResponse = this.notFound(request);
+
+				if(rawResponse)
+				{
+					return accept(rawResponse instanceof Response
+						? rawResponse
+						: new Response(rawResponse, {status: 404})
+					);
+				}
 			}
 
 			this.input  = ['POST', 'PUT', 'PATCH'].includes(method) ? post.split('') : [];
@@ -253,12 +341,13 @@ export class PhpCgi
 
 			const selfUrl = new URL(globalThis.location);
 
+			putEnv(php, 'PHP_INI_SCAN_DIR', '/config');
+
 			for(const [name, value] of Object.entries(this.env))
 			{
 				putEnv(php, name, value);
 			}
 
-			// putEnv(php, 'PHP_INI_SCAN_DIR', '/conf');
 			putEnv(php, 'SERVER_SOFTWARE', navigator.userAgent);
 			putEnv(php, 'REQUEST_METHOD', method);
 			putEnv(php, 'REMOTE_ADDR', '127.0.0.1');
@@ -289,9 +378,11 @@ export class PhpCgi
 			}
 			catch (error)
 			{
-				console.warn(error);
+				console.error(error);
 				this.refresh();
-				return accept(new Response('500: Internal Server Error.', { status: 500 }));
+				const response = new Response('500: Internal Server Error.', { status: 500 });
+				this.onRequest(request, response);
+				accept(response);
 			}
 
 			++this.count;
@@ -328,7 +419,11 @@ export class PhpCgi
 				headers.Location = parsedResponse.headers.Location;
 			}
 
-			accept(new Response(parsedResponse.body || '', { headers, status, url }));
+			const response = new Response(parsedResponse.body || '', { headers, status, url });
+
+			this.onRequest(request, response);
+
+			accept(response);
 		});
 	}
 

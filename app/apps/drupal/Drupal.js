@@ -81,14 +81,6 @@ const packages = {
 		dir:   'laravel-11/public',
 		entry: 'index.php',
 	},
-	// 'phpLiteAdmin-1': {
-	// 	name:  'phpLiteAdmin 1.9',
-	// 	file:  '/backups/phpLiteAdmin-1.9.zip',
-	// 	path:  'phpLiteAdmin-1',
-	// 	vHost: 'phpLiteAdmin-1',
-	// 	dir:   'phpLiteAdmin-1',
-	// 	entry: 'phpliteadmin.php',
-	// },
 	// 'symfony-7': {
 	// 	name:  'Symfony 7',
 	// 	file:  '/backups/symfony-7.zip',
@@ -130,7 +122,7 @@ export class Drupal extends Task
 		this.window.args.packages = packages;
 
 		this.window.args.minWidth  = `720px`;
-		this.window.args.minHeight = `520px`;
+		this.window.args.minHeight = `640px`;
 
 		if(!Home.instance().args.isMobile)
 		{
@@ -156,6 +148,7 @@ export class Drupal extends Task
 		this.window.args.confirm = 0;
 		// this.window.args.step = 'step-install-options';
 		this.window.args.step = 'step-1';
+
 
 		this.window.args.bindTo('confirm', v => {
 			if(this.window.tags.nextButton)
@@ -187,6 +180,13 @@ export class Drupal extends Task
 		this.window.viewAllFiles    = event => this.viewAllFiles(event);
 		this.window.viewFiles       = event => this.viewFiles(event);
 
+		this.window.listAttached = tag => {
+			// target.value = this.window.args.selectedPackage;
+			console.log([...tag.children]);
+			// console.log(this.window.args.selectedPackage);
+			// console.log(target, target.value);
+		}
+
 		this.window.listen(navigator.serviceWorker, 'message', event => {
 
 			if(event.data.re && incomplete.has(event.data.re))
@@ -214,6 +214,7 @@ export class Drupal extends Task
 
 			const pkg = packages[v];
 
+			this.window.args.installName   = pkg.name;
 			this.window.args.installPath   = pkg.path;
 			this.window.args.installPrefix = pkg.vHost;
 			this.window.args.installZip    = pkg.file;
@@ -221,8 +222,14 @@ export class Drupal extends Task
 			this.window.args.installEntry  = pkg.entry;
 		});
 
-		this.window.args.selectedPackage = 'drupal-7';
+		const splitPath = taskPath[0].split('/');
 
+		this.window.args.selectedPackage = splitPath[0] || 'drupal-7';
+
+		if(splitPath[1] === 'install' || splitPath[1] === 'auto-install')
+		{
+			this.confirmOptions();
+		}
 
 		return Bindable.make(this);
 	}
@@ -290,8 +297,6 @@ export class Drupal extends Task
 		const installPath = '/persist/' + this.window.args.installPath;
 		const existingvHost = settings.vHosts.find(vHost => vHost.pathPrefix === vHostPrefix);
 
-		console.log(existingvHost);
-
 		if(!existingvHost)
 		{
 			settings.vHosts.push({
@@ -299,8 +304,6 @@ export class Drupal extends Task
 				directory:  '/persist/' + this.window.args.installvHostDir,
 				entrypoint: this.window.args.installEntry
 			});
-
-			console.log(this.window.args.installEntry);
 		}
 		else
 		{
@@ -440,15 +443,35 @@ export class Drupal extends Task
 		input.click();
 	}
 
-	confirmOptions()
+	async confirmOptions()
 	{
-		this.window.args.confirm = '0';
-		this.window.args.step = 'step-2';
-		this.window.args.installPercent = 0;
+		const { exists } = await this.sendMessage('analyzePath', ['/persist/' + this.window.args.installPath]);
+
+		if(exists)
+		{
+			this.window.args.confirm = '0';
+			this.window.args.step = 'step-2';
+			this.window.args.installPercent = 0;
+		}
+		else
+		{
+			const ret = this.confirmInitFilesystem();
+
+			const splitPath = this.path[0].split('/');
+
+			if(splitPath[1] === 'auto-install')
+			{
+				// ret.then(() => window.location = '/php-wasm/' + this.window.args.installPrefix);
+				ret.then(() => window.open('/php-wasm/' + this.window.args.installPrefix));
+			}
+
+			return ret;
+		}
+
 	}
 
-	packageSelected(event)
-	{
-		this.window.args.selectedPackage = event.target.value;
-	}
+	// packageSelected(event)
+	// {
+	// 	this.window.args. = event.target.value;
+	// }
 }

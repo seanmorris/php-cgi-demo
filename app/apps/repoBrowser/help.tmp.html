@@ -14,7 +14,7 @@
 				<li><img src = "/w95/9-16-4bit.png"> This representes a <b>mounted</b> directory.</li>
 			</ul>
 
-			<p>Top level directories like <i>/tmp</i> or <i>/home</i> are regenerated each time php-wasm is re-instantiated. Since php-cgi-wasm runs in the service worker, this won't be on ever page refresh but its important to remember that these folders cannot store anything persistently.</p>
+			<p>Top level directories like <i>/tmp</i> or <i>/home</i> are regenerated each time php-wasm is re-instantiated. Since php-cgi-wasm runs in the service worker, this won't be on every page refresh, but its important to remember that these folders cannot store anything persistently.</p>
 
 			<p><b>Mounted</b> directories that are backed by persistent IDBFS volumes are marked with a <img src = "/w95/9-16-4bit.png"> icon. These directories will contain PHP source code and configuration files, so they can be stored and  modified without fear of losing them.</p>
 
