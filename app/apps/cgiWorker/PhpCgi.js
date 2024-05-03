@@ -1,5 +1,6 @@
 import PHP from 'php-cgi-wasm/php-cgi-worker';
 import parseResponse from './parseResponse';
+import { breakoutRequest } from './breakoutRequest';
 
 const putEnv = (php, key, value) => php.ccall(
 	'wasm_sapi_cgi_putenv'
@@ -7,46 +8,6 @@ const putEnv = (php, key, value) => php.ccall(
 	, ['string', 'string']
 	, [key, value]
 );
-
-const breakoutRequest = request => {
-	let getPost = Promise.resolve();
-
-	if(request.body)
-	{
-		getPost = new Promise(accept => {
-			const reader   = request.body.getReader();
-			const postBody = [];
-
-			const processBody = ({done, value}) => {
-				if(value)
-				{
-					postBody.push([...value].map(x => String.fromCharCode(x)).join(''));
-				}
-
-				if(!done)
-				{
-					return reader.read().then(processBody);
-				}
-
-				accept(postBody.join(''));
-			};
-
-			return reader.read().then(processBody);
-		});
-	}
-
-	const url = new URL(request.url);
-
-	return getPost.then(post => ({
-		url
-		, method: request.method
-		, get: url.search ? url.search.substr(1) : ''
-		, post: request.method === 'POST' ? post : null
-		, contentType: request.method === 'POST'
-			? (request.headers.get('Content-Type') ?? 'application/x-www-form-urlencoded')
-			: null
-	}));
-};
 
 const requestTimes = new WeakMap;
 
@@ -85,8 +46,8 @@ export class PhpCgi
 
 		this.phpArgs   = args;
 
-		this.maxRequestAge    = args.maxRequestAge || 0;
-		this.staticCacheTime  = args.staticCacheTime || 0;
+		this.maxRequestAge    = args.maxRequestAge    || 0;
+		this.staticCacheTime  = args.staticCacheTime  || 0;
 		this.dynamicCacheTime = args.dynamicCacheTime || 0;
 		this.vHosts = args.vHosts || [];
 
@@ -104,6 +65,7 @@ export class PhpCgi
 				? String(this.input.shift()).charCodeAt(0)
 				: null
 			, stdout: x => this.output.push(x)
+			, stderr: x => this.error.push(x)
 			, persist: [{mountPath:'/persist'}, {mountPath:'/config'}]
 			, ...this.phpArgs
 		});
@@ -380,7 +342,17 @@ export class PhpCgi
 			{
 				console.error(error);
 				this.refresh();
-				const response = new Response('500: Internal Server Error.', { status: 500 });
+				const response = new Response(
+					`500: Internal Server Error.\n`
+						+ `=`.repeat(80) + `\n\n`
+						+ `Stacktrace:\n${error.stack}\n`
+						+ `=`.repeat(80) + `\n\n`
+						+ `STDERR:\n${new TextDecoder().decode(new Uint8Array(this.error).buffer)}\n`
+						+ `=`.repeat(80) + `\n\n`
+						+ `STDOUT:\n${new TextDecoder().decode(new Uint8Array(this.output).buffer)}\n`
+						+ `=`.repeat(80) + `\n\n`
+					, { status: 500 }
+				);
 				this.onRequest(request, response);
 				accept(response);
 			}

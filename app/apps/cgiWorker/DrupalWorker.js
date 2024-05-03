@@ -37,13 +37,13 @@ const php = new PhpCgi({
 	}
 });
 
+// Extras
+self.addEventListener('install', event => console.log('Install'));
+self.addEventListener('activate', event => console.log('Activate'));
+// self.addEventListener('push', event => console.log(event));
+
 // Set up the event handlers
 self.addEventListener('install',  event => php.handleInstallEvent(event));
 self.addEventListener('activate', event => php.handleActivateEvent(event));
 self.addEventListener('fetch',    event => php.handleFetchEvent(event));
 self.addEventListener('message',  event => php.handleMessageEvent(event));
-
-// Extras
-self.addEventListener('install', event => console.log('Install'));
-self.addEventListener('activate', event => console.log('Activate'));
-// self.addEventListener('push', event => console.log(event));

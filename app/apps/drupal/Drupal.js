@@ -29,35 +29,21 @@ const packages = {
 		dir:   'drupal-7.95',
 		entry: 'index.php',
 	},
-	// 'drupal-8': {
-	// 	name:  'Drupal 8',
-	// 	file:  '/backups/drupal-8.zip',
-	// 	path:  'drupal-8',
-	// 	vHost: 'drupal-8',
-	// 	dir:   'drupal-8/web',
-	// },
-	// 'codeigniter-3': {
-	// 	name:  'CodeIgniter 3',
-	// 	file:  '/backups/codeigniter-3.zip',
-	// 	path:  'codeigniter-3',
-	// 	vHost: 'codeigniter-3',
-	// 	dir:   'codeigniter-3',
-	// },
-	// 'codeigniter-4': {
-	// 	name:  'CodeIgniter 4',
-	// 	file:  '/backups/codeigniter-4.zip',
-	// 	path:  'codeigniter-4',
-	// 	vHost: 'codeigniter-4',
-	// 	dir:   'codeigniter-4/public',
-	// 	entry: 'index.php',
-	// },
-	// 'cakephp-5': {
-	// 	name:  'CakePHP 5',
-	// 	file:  '/backups/cakephp-5.zip',
-	// 	path:  'cakephp-5',
-	// 	vHost: 'cakephp-5',
-	// 	dir:   'cakephp-5/webroot',
-	// },
+	'cakephp-5': {
+		name:  'CakePHP 5',
+		file:  '/backups/cakephp-5.zip',
+		path:  'cakephp-5',
+		vHost: 'cakephp-5',
+		dir:   'cakephp-5/webroot',
+	},
+	'codeigniter-4': {
+		name:  'CodeIgniter 4',
+		file:  '/backups/codeigniter-4.zip',
+		path:  'codeigniter-4',
+		vHost: 'codeigniter-4',
+		dir:   'codeigniter-4/public',
+		entry: 'index.php',
+	},
 	// 'getsimple-3': {
 	// 	name:  'GetSimpleCMS 3',
 	// 	file:  '/backups/GetSimpleCMS-3.3.16.zip',
@@ -155,7 +141,11 @@ export class Drupal extends Task
 		});
 
 		this.php.addEventListener('output', event => {
-			// console.log(event.detail);
+			console.log(event.detail);
+		});
+
+		this.php.addEventListener('error', event => {
+			console.log(event.detail);
 		});
 
 		this.window.initFilesystem  = event => this.initFilesystem(event);
